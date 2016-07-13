@@ -14,12 +14,12 @@
 //////////////////////////////////////////////////////////////////////////
 // Constants
 //////////////////////////////////////////////////////////////////////////
-#define WINDOW_TITLE "OpenGL Window"
+#define WINDOW_TITLE_PREFIX "OpenGL Window"
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
+unsigned int WINDOW_HANDLE = 0;
+unsigned int FRAME_COUNT = 0;
 float FIELD_OF_VIEW = 45;
-
-#define TEXTURE_ID 13
 
 //////////////////////////////////////////////////////////////////////////
 // Pointers
@@ -32,14 +32,17 @@ Renderer* RendererObject = nullptr;
 // Function declarations
 //////////////////////////////////////////////////////////////////////////
 void InitCamera();
-bool InitGL(int argc, char** argv);
-bool InitCUDA(int argc, char** argv);
+void InitGL(int argc, char** argv);
+void InitCUDA(int argc, char** argv);
 void Initialize(int argc, char **argv);
 
 //////////////////////////////////////////////////////////////////////////
-// User interaction callback declarations
+// OpenGL callback declarations
 //////////////////////////////////////////////////////////////////////////
 void Display();
+void Reshape(int, int);
+void Timer(int);
+void Idle(void);
 void Keyboard(unsigned char Key, int, int);
 void SpecialKeys(int Key, int, int);
 void Mouse(int Button, int State, int x, int y);
@@ -73,6 +76,16 @@ void InitCamera()
 	CameraObject->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
 	CameraObject->SetFOV(FIELD_OF_VIEW);
 
+	if (!CameraObject)
+	{
+		fprintf(
+			stderr,
+			"ERROR: Failed Camera initialization.\n"
+			);
+		fflush(stderr);
+		exit(EXIT_FAILURE);
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,82 +97,87 @@ void Initialize(int argc, char** argv)
 	InitCamera();
 
 	// Initialize GL
-	if (!InitGL(argc, argv))
-	{
-		return;
-	}
+	InitGL(argc, argv);
 
 	// Initialize CUDA
 	InitCUDA(argc, argv);
 
-	// Graphics display callback registration
+	// OpenGL callback registration
 	glutDisplayFunc(Display);
-
-	// User interaction callback registration
+	glutReshapeFunc(Reshape);
+	glutIdleFunc(Idle);
+	glutTimerFunc(0,Timer,0);
 	glutKeyboardFunc(Keyboard);
 	glutSpecialFunc(SpecialKeys);
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
-	
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL initialization
 //////////////////////////////////////////////////////////////////////////
-bool InitGL(int argc, char** argv)
+void InitGL(int argc, char** argv)
 {
 
 	// Create GL environment
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	glutCreateWindow(WINDOW_TITLE);
+	WINDOW_HANDLE = glutCreateWindow(WINDOW_TITLE_PREFIX);
 
-	glewInit();
-	if (!glewIsSupported("GL_VERSION_2_0 "
-		"GL_ARB_pixel_buffer_object"
-		)) {
-		fprintf(stderr, "ERROR: Support for necessary OpenGL extensions missing.");
+	if (WINDOW_HANDLE < 1)
+	{
+		fprintf(
+			stderr,
+			"ERROR: glutCreateWindow failed.\n"
+			);
 		fflush(stderr);
-		return false;
+		exit(EXIT_FAILURE);
+	}
+
+	GLenum GLEW_INIT_RESULT;
+	GLEW_INIT_RESULT = glewInit();
+	if (GLEW_OK != GLEW_INIT_RESULT)
+	{
+		fprintf(
+			stderr,
+			"ERROR: %s\n",
+			glewGetErrorString(GLEW_INIT_RESULT)
+			);
+		exit(EXIT_FAILURE);
+	}
+
+	if (!glewIsSupported("GL_VERSION_2_0 ""GL_ARB_pixel_buffer_object"))
+	{
+		fprintf(
+			stderr,
+			"ERROR: Support for necessary OpenGL extensions missing."
+			);
+		fflush(stderr);
+		exit(EXIT_FAILURE);
 	}
 	
-	// Set up viewport
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-	glDisable(GL_DEPTH_TEST);
-	glDisable(GL_LIGHTING);
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	glOrtho(0, 1, 0, 1, -1, 1);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
-
-	// Create a texture for display
-	glBindTexture(GL_TEXTURE_2D, TEXTURE_ID);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	
-	// Enable texture
-	glEnable(GL_TEXTURE_2D);
-	
-	return true;
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 // CUDA Initialization
 //////////////////////////////////////////////////////////////////////////
-bool InitCUDA(int argc, char** argv)
+void InitCUDA(int argc, char** argv)
 {
-	return true;
+
+	if (false)
+	{
+		fprintf(
+			stderr,
+			"ERROR: Failed CUDA initialization."
+			);
+		fflush(stderr);
+		exit(EXIT_FAILURE);
+	}
+
 }
 
 
@@ -168,54 +186,52 @@ bool InitCUDA(int argc, char** argv)
 //////////////////////////////////////////////////////////////////////////
 void Display()
 {
+
+	++FRAME_COUNT;
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glutSwapBuffers();
+	
+}
 
-	// Texture refresh
-	int ImageWidth = WINDOW_WIDTH;
-	int ImageHeight = WINDOW_HEIGHT;
-	uchar3* ImageData = new uchar3[ImageWidth*ImageHeight];
+void Reshape(int NewWidth, int NewHeight)
+{
 
-	for (int i = 0; i < ImageHeight; i++)
+	WINDOW_WIDTH = NewWidth;
+	WINDOW_HEIGHT = NewHeight;
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+}
+
+void Timer(int Value)
+{
+
+	if (Value != 0)
 	{
-		for (int j = 0; j < ImageWidth; j++)
-		{
-			// Remove, renders random colors.
-			uchar3 temp;
-			temp.x = (int) 255* rand() / RAND_MAX;
-			temp.y = (int)255 * rand() / RAND_MAX;
-			temp.z = (int)255 * rand() / RAND_MAX;
-			ImageData[i*ImageWidth + j] = temp;
-		}
+		char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
+
+		sprintf(
+			WINDOW_TITLE,
+			"%s: %d FPS @ %d x %d",
+			WINDOW_TITLE_PREFIX,
+			FRAME_COUNT * 5,
+			WINDOW_WIDTH,
+			WINDOW_HEIGHT
+			);
+
+		glutSetWindowTitle(WINDOW_TITLE);
+		free(WINDOW_TITLE);
 	}
 
-	glTexImage2D(GL_TEXTURE_2D,
-		0,
-		GL_RGB,
-		ImageWidth,
-		ImageHeight,
-		0,
-		GL_RGB,
-		GL_UNSIGNED_BYTE,
-		ImageData);
-	delete[] ImageData;
+	FRAME_COUNT = 0;
+	glutTimerFunc(200, Timer, 1);
 
-	// Display texture
-	glBindTexture(GL_TEXTURE_2D, TEXTURE_ID);
-	glBegin(GL_QUADS);
-	glTexCoord2f(0.0, 0.0);
-	glVertex3f(0.0, 1.0, 0.0);
-	glTexCoord2f(1.0, 0.0);
-	glVertex3f(1.0, 1.0, 0.0);
-	glTexCoord2f(1.0, 1.0);
-	glVertex3f(1.0, 0.0, 0.0);
-	glTexCoord2f(0.0, 1.0);
-	glVertex3f(0.0, 0.0, 0.0);
-	glEnd();
+}
 
-	glutSwapBuffers();
+void Idle(void)
+{
 	glutPostRedisplay();
-	
 }
 
 void Keyboard(unsigned char Key, int, int)
