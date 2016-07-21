@@ -3,10 +3,12 @@
 #include "GL\glew.h"
 #include "GL\glut.h"
 #include <cuda_gl_interop.h>
+#include <iostream>
 #include <sstream>
 #include <cmath>
 #include <math.h>
 
+#include "Core/Scene.h"
 #include "Core/Camera.h"
 #include "Core/Renderer.h"
 #include "Core/Image.h"
@@ -24,8 +26,10 @@ float FIELD_OF_VIEW = 45;
 //////////////////////////////////////////////////////////////////////////
 // Pointers
 //////////////////////////////////////////////////////////////////////////
-Camera* CameraObject = nullptr;
-Renderer* RendererObject = nullptr;
+HScene* Scene = nullptr;
+HCamera* Camera = nullptr;
+HRenderer* Renderer = nullptr;
+HImage* FinalImage = nullptr;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -34,7 +38,7 @@ Renderer* RendererObject = nullptr;
 void InitCamera();
 void InitGL(int argc, char** argv);
 void InitCUDA(int argc, char** argv);
-void Initialize(int argc, char **argv);
+void Initialize(int argc, char** argv);
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL callback declarations
@@ -56,6 +60,29 @@ int main(int argc, char** argv)
 	// Main initialization
 	Initialize(argc, argv);
 
+	// TODO: Move inside Initialize
+	Renderer = new HRenderer(Camera);
+
+
+	// Kernel call testing
+	float* d_in;
+	float* d_out;
+	float hptr[10];
+	for (int i = 0; i < 10; i++)
+	{
+		hptr[i] = i;
+	}
+
+	cudaMalloc((float**)&d_in, 10 * sizeof(float));
+	cudaMalloc((float**)&d_out, 10 * sizeof(float));
+	cudaMemcpy(d_in, hptr, 10 * sizeof(float), cudaMemcpyHostToDevice);
+	Renderer->TestRunKernel(d_in, d_out);
+	cudaMemcpy(hptr, d_out, 10 * sizeof(float), cudaMemcpyDeviceToHost);
+	for (int i = 0; i < 10; i++)
+	{
+		std::cout << hptr[i] << std::endl;
+	}
+
 	// Rendering main loop
 	glutMainLoop();
 
@@ -67,16 +94,16 @@ int main(int argc, char** argv)
 void InitCamera()
 {
 
-	if (CameraObject)
+	if (Camera)
 	{
-		delete CameraObject;
+		delete Camera;
 	}
 
-	CameraObject = new Camera();
-	CameraObject->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
-	CameraObject->SetFOV(FIELD_OF_VIEW);
+	Camera = new HCamera();
+	Camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
+	Camera->SetFOV(FIELD_OF_VIEW);
 
-	if (!CameraObject)
+	if (!Camera)
 	{
 		fprintf(
 			stderr,
@@ -159,6 +186,9 @@ void InitGL(int argc, char** argv)
 	}
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glDisable(GL_DEPTH_TEST);
+
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 }
 
@@ -191,6 +221,10 @@ void Display()
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
+	FinalImage = Renderer->Render();
+
+
+
 	glutSwapBuffers();
 	
 }

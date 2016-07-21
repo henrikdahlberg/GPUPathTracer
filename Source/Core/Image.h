@@ -1,14 +1,19 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-class Image
+#include "Geometry.h"
+
+class HImage
 {
 public:
+	HImage();
+	HImage(unsigned int Width, unsigned int Height);
+	HImage(float2 Resolution);
+	virtual ~HImage();
 
-protected:
-
-private:
-
+	float2 Resolution;
+	Vector3Df* Pixels;
+	unsigned int NumPixels;
 };
 
 

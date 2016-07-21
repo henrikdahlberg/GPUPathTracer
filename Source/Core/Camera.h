@@ -5,7 +5,7 @@
 #include "Core/Geometry.h"
 #include "Utility/MathUtility.h"
 
-struct CameraData
+struct HCameraData
 {
 	float2 Resolution;
 	float2 FOV;
@@ -18,11 +18,11 @@ struct CameraData
 	float FocalDistance;
 };
 
-class Camera
+class HCamera
 {
 public:
-	Camera();
-	virtual ~Camera();
+	HCamera();
+	virtual ~HCamera();
 	
 	/**
 	 * Set camera resolution.
@@ -38,10 +38,12 @@ public:
 	 */
 	void SetFOV(const float NewFOV);
 
-	float2 GetResolution() { return Data.Resolution; }
-	float2 GetFOV() { return Data.FOV; }
-	CameraData GetCameraData() { return Data; }
+	float2 GetResolution() { return CameraData.Resolution; }
+	float2 GetFOV() { return CameraData.FOV; }
+	HCameraData* GetCameraData() { return &CameraData; }
+
 protected:
+	void SetCameraData();
 
 private:
 	//TODO Make Transform component
@@ -49,7 +51,7 @@ private:
 	float Pitch;
 	float Roll;
 
-	CameraData Data;
+	HCameraData CameraData;
 };
 
 #endif // CAMERA_H

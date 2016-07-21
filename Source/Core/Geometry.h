@@ -41,14 +41,14 @@ inline __host__ __device__ float dot(const float4& v1, const Vector3Df& v2){ ret
 inline __host__ __device__ float distancesq(const Vector3Df& v1, const Vector3Df& v2){ return (v1.x - v2.x)*(v1.x - v2.x) + (v1.y - v2.y)*(v1.y - v2.y) + (v1.z - v2.z)*(v1.z - v2.z); }
 inline __host__ __device__ float distance(const Vector3Df& v1, const Vector3Df& v2){ return sqrtf((v1.x - v2.x)*(v1.x - v2.x) + (v1.y - v2.y)*(v1.y - v2.y) + (v1.z - v2.z)*(v1.z - v2.z)); }
 
-class Ray
+class HRay
 {
 public:
 	float3 Origin;
 	float3 Direction;
 
 	__device__
-	Ray(float3 o_, float3 d_) : Origin(o_), Direction(d_) {}
+	HRay(float3 o_, float3 d_) : Origin(o_), Direction(d_) {}
 };
 
 #endif // GEOMETRY_H

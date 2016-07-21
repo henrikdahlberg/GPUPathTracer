@@ -18,7 +18,7 @@
 #define M_SQRT2    1.41421356237309504880
 #define M_SQRT1_2  0.707106781186547524401
 
-namespace MathUtility
+namespace HMathUtility
 {
 	/**
 	 * Convert angle in radians to angle in degrees.
@@ -31,6 +31,14 @@ namespace MathUtility
 	* @param Deg	Angle in degrees.
 	*/
 	extern inline float DegToRad(float Deg) { return Deg * M_PI / 180.0f; }
+
+	/**
+	 * Integer hash function by Thomas Wang. Used to permute the frame number to be used
+	 * as seed in the curand random number generator on the GPU.
+	 * @param s		Seed to be hashed.
+	 * @return hashed seed.
+	 */
+	__host__ __device__ extern unsigned int TWHash(unsigned int s);
 }
 
 #endif // MATHUTILITY_H
