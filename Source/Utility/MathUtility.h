@@ -1,7 +1,7 @@
 #ifndef MATHUTILITY_H
 #define MATHUTILITY_H
 
-#include "cutil_math.h"
+#include "External/cutil_math.h"
 #include <math.h>
 
 #define M_E        2.71828182845904523536
@@ -20,6 +20,7 @@
 
 namespace HMathUtility
 {
+
 	/**
 	 * Convert angle in radians to angle in degrees.
 	 * @param Rad	Angle in radians.
@@ -32,13 +33,6 @@ namespace HMathUtility
 	*/
 	extern inline float DegToRad(float Deg) { return Deg * M_PI / 180.0f; }
 
-	/**
-	 * Integer hash function by Thomas Wang. Used to permute the frame number to be used
-	 * as seed in the curand random number generator on the GPU.
-	 * @param s		Seed to be hashed.
-	 * @return hashed seed.
-	 */
-	__host__ __device__ extern unsigned int TWHash(unsigned int s);
 }
 
 #endif // MATHUTILITY_H

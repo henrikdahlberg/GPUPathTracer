@@ -80,6 +80,7 @@ ipch/
 [Rr]elease*/
 Ankh.NoLoad
 *.vcxproj
+*.pdb
 
 #MonoDevelop
 *.pidb

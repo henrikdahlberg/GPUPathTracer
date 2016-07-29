@@ -17,6 +17,7 @@
 // Constants
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
+#define FPS_DISPLAY_REFRESH_RATE 100 //ms
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
 unsigned int WINDOW_HANDLE = 0;
@@ -31,13 +32,11 @@ HCamera* Camera = nullptr;
 HRenderer* Renderer = nullptr;
 HImage* FinalImage = nullptr;
 
-
 //////////////////////////////////////////////////////////////////////////
 // Function declarations
 //////////////////////////////////////////////////////////////////////////
 void InitCamera();
 void InitGL(int argc, char** argv);
-void InitCUDA(int argc, char** argv);
 void Initialize(int argc, char** argv);
 
 //////////////////////////////////////////////////////////////////////////
@@ -51,37 +50,19 @@ void Keyboard(unsigned char Key, int, int);
 void SpecialKeys(int Key, int, int);
 void Mouse(int Button, int State, int x, int y);
 void Motion(int x, int y);
+void Cleanup();
 
 //////////////////////////////////////////////////////////////////////////
 // Main loop
 //////////////////////////////////////////////////////////////////////////
 int main(int argc, char** argv)
 {
+
 	// Main initialization
 	Initialize(argc, argv);
 
 	// TODO: Move inside Initialize
 	Renderer = new HRenderer(Camera);
-
-
-	// Kernel call testing
-	float* d_in;
-	float* d_out;
-	float hptr[10];
-	for (int i = 0; i < 10; i++)
-	{
-		hptr[i] = i;
-	}
-
-	cudaMalloc((float**)&d_in, 10 * sizeof(float));
-	cudaMalloc((float**)&d_out, 10 * sizeof(float));
-	cudaMemcpy(d_in, hptr, 10 * sizeof(float), cudaMemcpyHostToDevice);
-	Renderer->TestRunKernel(d_in, d_out);
-	cudaMemcpy(hptr, d_out, 10 * sizeof(float), cudaMemcpyDeviceToHost);
-	for (int i = 0; i < 10; i++)
-	{
-		std::cout << hptr[i] << std::endl;
-	}
 
 	// Rendering main loop
 	glutMainLoop();
@@ -126,9 +107,6 @@ void Initialize(int argc, char** argv)
 	// Initialize GL
 	InitGL(argc, argv);
 
-	// Initialize CUDA
-	InitCUDA(argc, argv);
-
 	// OpenGL callback registration
 	glutDisplayFunc(Display);
 	glutReshapeFunc(Reshape);
@@ -153,6 +131,7 @@ void InitGL(int argc, char** argv)
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	WINDOW_HANDLE = glutCreateWindow(WINDOW_TITLE_PREFIX);
 
+	// Window creation error handling
 	if (WINDOW_HANDLE < 1)
 	{
 		fprintf(
@@ -163,9 +142,10 @@ void InitGL(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
+	// GLEW initialization error handling
 	GLenum GLEW_INIT_RESULT;
 	GLEW_INIT_RESULT = glewInit();
-	if (GLEW_OK != GLEW_INIT_RESULT)
+	if (GLEW_INIT_RESULT != GLEW_OK)
 	{
 		fprintf(
 			stderr,
@@ -186,30 +166,13 @@ void InitGL(int argc, char** argv)
 	}
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glMatrixMode(GL_PROJECTION);
+	gluOrtho2D(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT);
 	glDisable(GL_DEPTH_TEST);
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 }
-
-//////////////////////////////////////////////////////////////////////////
-// CUDA Initialization
-//////////////////////////////////////////////////////////////////////////
-void InitCUDA(int argc, char** argv)
-{
-
-	if (false)
-	{
-		fprintf(
-			stderr,
-			"ERROR: Failed CUDA initialization."
-			);
-		fflush(stderr);
-		exit(EXIT_FAILURE);
-	}
-
-}
-
 
 //////////////////////////////////////////////////////////////////////////
 // Callback functions
@@ -223,8 +186,14 @@ void Display()
 	
 	FinalImage = Renderer->Render();
 
+	glBindBuffer(GL_ARRAY_BUFFER, FinalImage->Buffer);
+	glVertexPointer(2, GL_FLOAT, 12, 0);
+	glColorPointer(4, GL_UNSIGNED_BYTE, 12, (GLvoid*)8);
 
-
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+	glDrawArrays(GL_POINTS, 0, WINDOW_WIDTH*WINDOW_HEIGHT);
+	glDisableClientState(GL_VERTEX_ARRAY);
 	glutSwapBuffers();
 	
 }
@@ -236,6 +205,7 @@ void Reshape(int NewWidth, int NewHeight)
 	WINDOW_HEIGHT = NewHeight;
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
+	// TODO: Change Camera, Renderer, CameraData and Image parameters as well
 }
 
 void Timer(int Value)
@@ -249,7 +219,7 @@ void Timer(int Value)
 			WINDOW_TITLE,
 			"%s: %d FPS @ %d x %d",
 			WINDOW_TITLE_PREFIX,
-			FRAME_COUNT * 5,
+			FRAME_COUNT * 1000 / FPS_DISPLAY_REFRESH_RATE,
 			WINDOW_WIDTH,
 			WINDOW_HEIGHT
 			);
@@ -259,7 +229,8 @@ void Timer(int Value)
 	}
 
 	FRAME_COUNT = 0;
-	glutTimerFunc(200, Timer, 1);
+	glutPostRedisplay();
+	glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
 
 }
 

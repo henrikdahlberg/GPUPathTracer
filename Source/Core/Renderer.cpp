@@ -1,75 +1,151 @@
 #include "Renderer.h"
 
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+#include <helper_functions.h>
+#include <helper_cuda.h>
+#include <helper_cuda_gl.h>
+#include <iostream>
+
 HRenderer::HRenderer(HCameraData* CameraData)
 {
-	bFirstRenderCall = true;
+
+	PassCounter = 0;
+	bFirstRenderPass = true;
 	this->CameraData = CameraData;
-	OutImage = new HImage(CameraData->Resolution);
+	Image = new HImage(CameraData->Resolution);
+	InitCUDA();
+
 }
 
 HRenderer::HRenderer(HCamera* Camera)
 {
-	bFirstRenderCall = true;
+
+	PassCounter = 0;
+	bFirstRenderPass = true;
 	this->CameraData = Camera->GetCameraData();
-	OutImage = new HImage(CameraData->Resolution);
+	Image = new HImage(CameraData->Resolution);
+	InitCUDA();
+
 }
 
-HRenderer::~HRenderer() {}
+HRenderer::~HRenderer()
+{
+	// TODO: Destructor, free CUDA pointers etc.
+}
 
 HImage* HRenderer::Render()
 {
-	if (bFirstRenderCall)
+
+	if (bFirstRenderPass)
 	{
-		bFirstRenderCall = false;
+		// TODO: Should be renamed to bReset or similar. Happens when camera is moved, reset GPU memory etc
+		bFirstRenderPass = false;
+
 	}
 
-	return OutImage;
+	++PassCounter;
+
+	checkCudaErrors(cudaStreamCreate(&CUDAStream));
+	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
+	
+	// Launches CUDA kernel to modify OutImage pixels
+	// Temporary test kernel for now to verify accumulation buffer
+	HKernels::LaunchRenderKernel(
+		Image->GPUPixels,
+		AccumulationBuffer,
+		CameraData,
+		GPUCameraData,
+		PassCounter);
+
+	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
+
+	checkCudaErrors(cudaStreamDestroy(CUDAStream));
+
+	return Image;
+
 }
 
 void HRenderer::SetCameraData(HCameraData* CameraData)
 {
+
 	this->CameraData = CameraData;
+
 }
 
 void HRenderer::Reset()
 {
-	if (OutImage != nullptr)
+
+	// TODO: Probably don't want to delete entire image object, just reset the pixels.
+	//			Should update CameraData/GPUCameraData, reset AccumulationBuffer etc.
+	if (Image != nullptr)
 	{
-		delete OutImage;
-		OutImage = nullptr;
+		delete Image;
+		Image = nullptr;
 	}
 
-	OutImage = new HImage(CameraData->Resolution);
+	Image = new HImage(this->CameraData->Resolution);
+
 }
 
-void HRenderer::TestRunKernel(float* d_in, float* d_out)
+void HRenderer::CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource, unsigned int BufferFlags)
 {
-	HKernels::LaunchKernel(d_in, d_out);
-}
 
-void HRenderer::CreateVBO(GLuint* VBO, cudaGraphicsResource** VBOResource, unsigned int VBOFlags)
-{
-	assert(VBO);
+	assert(Buffer);
 
-	// Create VBO
-	glGenBuffers(1, VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+	// Create buffer
+	glGenBuffers(1, Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
 
-	// Initialize VBO
-	unsigned int VBOSize = OutImage->Resolution.x * OutImage->Resolution.y * sizeof(Vector3Df);
-	glBufferData(GL_ARRAY_BUFFER, VBOSize, 0, GL_DYNAMIC_DRAW);
+	// Initialize buffer
+	glBufferData(GL_ARRAY_BUFFER, Image->NumPixels * sizeof(float3), 0, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Register VBO with CUDA and perform error checks
-	checkCudaErrors(cudaGraphicsGLRegisterBuffer(VBOResource, *VBO, VBOFlags));
+	checkCudaErrors(cudaGraphicsGLRegisterBuffer(BufferResource, *Buffer, BufferFlags));
 	SDK_CHECK_ERROR_GL();
+
 }
 
-void HRenderer::DeleteVBO(GLuint* VBO, cudaGraphicsResource* VBOResource)
+void HRenderer::DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource)
 {
+
 	// Unregister VBO with CUDA
-	checkCudaErrors(cudaGraphicsUnregisterResource(VBOResource));
-	glBindBuffer(1, *VBO);
-	glDeleteBuffers(1, VBO);
-	*VBO = 0;
+	checkCudaErrors(cudaGraphicsUnregisterResource(BufferResource));
+
+	// Delete VBO
+	glBindBuffer(1, *Buffer);
+	glDeleteBuffers(1, Buffer);
+	*Buffer = 0;
+
+}
+
+void HRenderer::InitCUDA()
+{
+
+	// Allocate memory on GPU for the accumulation buffer
+	checkCudaErrors(cudaMalloc(&AccumulationBuffer, Image->NumPixels * sizeof(float3)));
+
+	// Allocate memory on GPU for Camera data and copy over Camera data
+	checkCudaErrors(cudaMalloc(&GPUCameraData, sizeof(HCameraData)));
+	checkCudaErrors(cudaMemcpy(GPUCameraData, CameraData, sizeof(HCameraData), cudaMemcpyHostToDevice));
+
+	CreateVBO(&(Image->Buffer), &(this->BufferResource), cudaGraphicsRegisterFlagsNone);
+
+	// Set up device synchronization stream
+	checkCudaErrors(cudaStreamCreate(&CUDAStream));
+
+	// Map graphics resource to CUDA
+	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
+
+	// Set up access to mapped graphics resource through OutImage
+	size_t NumBytes;
+	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&(Image->GPUPixels), &NumBytes, BufferResource));
+
+	// Unmap graphics resource, ensures synchronization
+	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, CUDAStream));
+
+	// Clean up synchronization stream
+	checkCudaErrors(cudaStreamDestroy(CUDAStream));
+
 }

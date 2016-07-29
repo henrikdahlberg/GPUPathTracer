@@ -2,16 +2,17 @@
 #define CAMERA_H
 
 #include <cuda_runtime.h>
+
 #include "Core/Geometry.h"
 #include "Utility/MathUtility.h"
 
 struct HCameraData
 {
-	float2 Resolution;
+	uint2 Resolution;
 	float2 FOV;
-	Vector3Df Position;
-	Vector3Df Forward;
-	Vector3Df Up;
+	float3 Position;
+	float3 Forward;
+	float3 Up;
 
 	// TODO: Lens model in separate class
 	float ApertureRadius;
@@ -29,7 +30,7 @@ public:
 	 * @param Width		Width in pixels.
 	 * @param Height	Height in pixels.
 	 */
-	void SetResolution(const float Width, const float Height);
+	void SetResolution(const unsigned int Width, const unsigned int Height);
 
 	/**
 	 * Set camera horizontal field of view and calculate
@@ -38,7 +39,7 @@ public:
 	 */
 	void SetFOV(const float NewFOV);
 
-	float2 GetResolution() { return CameraData.Resolution; }
+	uint2 GetResolution() { return CameraData.Resolution; }
 	float2 GetFOV() { return CameraData.FOV; }
 	HCameraData* GetCameraData() { return &CameraData; }
 

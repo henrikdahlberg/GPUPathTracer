@@ -2,11 +2,6 @@
 #define RENDERER_H
 
 #include "GL/glew.h"
-#include <cuda_runtime.h>
-#include <cuda_gl_interop.h>
-#include <helper_functions.h>
-#include <helper_cuda.h>
-#include <helper_cuda_gl.h>
 
 #include "Scene.h"
 #include "Camera.h"
@@ -29,34 +24,36 @@ public:
 	void PrepareScene(HScene* Scene);
 	void Reset();
 
-	//temp
-	void TestRunKernel(float* d_in, float* d_out);
-
 protected:
 	/**
-	 * TODO: Doc
+	 * Initializes OpenGL Vertex Buffer Object and registers it for access by CUDA.
+	 *
 	 * @param VBO
 	 * @param VBOResource
 	 * @param VBOFlags
 	 */
-	void CreateVBO(GLuint* VBO, cudaGraphicsResource** VBOResource, unsigned int VBOFlags);
+	void CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource, unsigned int BufferFlags);
 
 	/**
 	 * TODO: Doc
+	 *
 	 * @param VBO
 	 * @param VBOResource
 	 */
-	void DeleteVBO(GLuint* VBO, cudaGraphicsResource* VBOResource);
+	void DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource);
 
 private:
-	bool bFirstRenderCall;
+	unsigned int PassCounter;
+	bool bFirstRenderPass;
 
-	GLuint VBO;
+	void InitCUDA();
+	cudaGraphicsResource* BufferResource;
+	cudaStream_t CUDAStream;
 
-	Vector3Df* AccumulationBuffer;
-
-	HImage* OutImage;
+	float3* AccumulationBuffer;
+	HImage* Image;
 	HCameraData* CameraData;
+	HCameraData* GPUCameraData;
 };
 
 #endif // RENDERER_H
