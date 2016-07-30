@@ -11,6 +11,7 @@ HRenderer::HRenderer(HCameraData* CameraData)
 {
 
 	PassCounter = 0;
+	FPSCounter = 0;
 	bFirstRenderPass = true;
 	this->CameraData = CameraData;
 	Image = new HImage(CameraData->Resolution);
@@ -22,6 +23,7 @@ HRenderer::HRenderer(HCamera* Camera)
 {
 
 	PassCounter = 0;
+	FPSCounter = 0;
 	bFirstRenderPass = true;
 	this->CameraData = Camera->GetCameraData();
 	Image = new HImage(CameraData->Resolution);
@@ -48,7 +50,7 @@ HImage* HRenderer::Render()
 
 	checkCudaErrors(cudaStreamCreate(&CUDAStream));
 	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
-	
+
 	// Launches CUDA kernel to modify OutImage pixels
 	// Temporary test kernel for now to verify accumulation buffer
 	HKernels::LaunchRenderKernel(
@@ -56,7 +58,8 @@ HImage* HRenderer::Render()
 		AccumulationBuffer,
 		CameraData,
 		GPUCameraData,
-		PassCounter);
+		PassCounter,
+		Rays);
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
 
@@ -129,6 +132,9 @@ void HRenderer::InitCUDA()
 	// Allocate memory on GPU for Camera data and copy over Camera data
 	checkCudaErrors(cudaMalloc(&GPUCameraData, sizeof(HCameraData)));
 	checkCudaErrors(cudaMemcpy(GPUCameraData, CameraData, sizeof(HCameraData), cudaMemcpyHostToDevice));
+
+	// Allocate memory on GPU for rays
+	checkCudaErrors(cudaMalloc(&Rays, Image->NumPixels * sizeof(HRay)));
 
 	CreateVBO(&(Image->Buffer), &(this->BufferResource), cudaGraphicsRegisterFlagsNone);
 

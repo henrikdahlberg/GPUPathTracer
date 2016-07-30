@@ -1,15 +1,21 @@
 #include "Camera.h"
 
+#include <math.h>
+
 HCamera::HCamera()
 {
 	// TODO: Take window size as argument
+	// TODO: Pass scene parameters to set up initial position
 
-	CameraData.Position = make_float3(0.0f, 0.0f, 0.0f);
+	CameraData.Position = make_float3(0.0f, 0.0f, 1.0f);
+	CameraData.View = make_float3(0.0f, 0.0f, -1.0f);
+	CameraData.Up = make_float3(0.0f, 1.0f, 0.0f);
 	Yaw = 0.0f;
 	Pitch = 0.0f;
 	Roll = 0.0f;
 	CameraData.ApertureRadius = 0.05f;
 	CameraData.FocalDistance = 5.0f;
+	CameraData.FOV.x = 45.0f;
 
 	SetResolution(1280, 720);
 }

@@ -11,7 +11,7 @@ struct HCameraData
 	uint2 Resolution;
 	float2 FOV;
 	float3 Position;
-	float3 Forward;
+	float3 View;
 	float3 Up;
 
 	// TODO: Lens model in separate class

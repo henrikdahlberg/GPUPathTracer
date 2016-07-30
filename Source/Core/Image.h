@@ -29,6 +29,8 @@ public:
 	float3* Pixels;
 	float3* GPUPixels;
 	unsigned int NumPixels;
+
+	// TODO: Save HDR image format from Accumulation buffer
 };
 
 

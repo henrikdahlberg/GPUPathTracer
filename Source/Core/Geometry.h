@@ -10,4 +10,10 @@ struct HRay
 	float3 Direction;
 };
 
+struct HSphere
+{
+	float3 Origin;
+	float Radius;
+};
+
 #endif // GEOMETRY_H

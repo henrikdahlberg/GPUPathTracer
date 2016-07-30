@@ -6,6 +6,7 @@
 #include <helper_functions.h>
 #include <helper_cuda.h>
 #include <helper_cuda_gl.h>
+#include <math.h>
 
 #include "Geometry.h"
 #include "Camera.h"
@@ -38,43 +39,116 @@ namespace HKernels
 	//////////////////////////////////////////////////////////////////////////
 	// Global Kernels
 	//////////////////////////////////////////////////////////////////////////
+	__global__ void InitRaysKernel(
+		HRay* Rays,
+		HCameraData* CameraData,
+		unsigned int PassCounter)
+	{
+
+		int x = blockIdx.x*blockDim.x + threadIdx.x;
+		int y = blockIdx.y*blockDim.y + threadIdx.y;
+
+		if (x < CameraData->Resolution.x && y < CameraData->Resolution.y)
+		{
+
+			int i = (CameraData->Resolution.y - y - 1)*CameraData->Resolution.x + x;
+
+			float3 Position = CameraData->Position;
+			float3 View = normalize(CameraData->View); // Shouldn't need normalization
+
+			// Compute horizontal and vertical axes on camera image plane
+			float3 HorizontalAxis = normalize(cross(View, CameraData->Up));
+			float3 VerticalAxis = normalize(cross(HorizontalAxis, View));
+
+			// Compute middle point on camera image plane
+			float3 MiddlePoint = Position + View;
+			float3 Horizontal = HorizontalAxis * tan(CameraData->FOV.x * M_PI_2 / 180.0f);
+			float3 Vertical = VerticalAxis * tan(CameraData->FOV.y * M_PI_2 / 180.0f);
+
+			// Global thread ID, used to perturb the random number generator seed
+			int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
+
+			// Initialize random number generator
+			curandState RNGState;
+			curand_init(TWHash(PassCounter) + threadId, 0, 0, &RNGState);
+
+			// Generate random pixel offsets for anti-aliasing
+			// Expected value is 0.5 i.e. middle of pixel
+			float OffsetX = curand_uniform(&RNGState) - 0.5f;
+			float OffsetY = curand_uniform(&RNGState) - 0.5f;
+
+			// Compute point on image plane and account for focal distance
+			float3 PointOnImagePlane = Position + ((MiddlePoint
+				+ (2.0f * (OffsetX + x) / (CameraData->Resolution.x - 1.0f) - 1.0f) * Horizontal
+				+ (2.0f * (OffsetY + y) / (CameraData->Resolution.y - 1.0f) - 1.0f) * Vertical) - Position)
+				* CameraData->FocalDistance;
+
+			float ApertureRadius = CameraData->ApertureRadius;
+			if (ApertureRadius > M_EPSILON)
+			{
+				// Sample a point on the aperture
+				float Angle = M_2PI * curand_uniform(&RNGState);
+				float Distance = ApertureRadius * sqrtf(curand_uniform(&RNGState));
+
+				Position += (cos(Angle) * HorizontalAxis + sin(Angle) * VerticalAxis) * Distance;
+			}
+
+			Rays[i].Origin = Position;
+			Rays[i].Direction = normalize(PointOnImagePlane - Position);
+
+		}
+
+	}
+
 	__global__ void TestRenderKernel(
 		float3* Pixels,
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
-		unsigned int PassCounter)
+		unsigned int PassCounter,
+		HRay* Rays)
 	{
 		
 		int x = blockIdx.x*blockDim.x + threadIdx.x;
 		int y = blockIdx.y*blockDim.y + threadIdx.y;
+		
+		if (x < CameraData->Resolution.x && y < CameraData->Resolution.y)
+		{
 
-		// Global thread ID, used to perturb the random number generator seed
-		int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
+			int i = (CameraData->Resolution.y - y - 1)*CameraData->Resolution.x + x;
 
-		int i = (CameraData->Resolution.y - y - 1)*CameraData->Resolution.x + x;
+			// Global thread ID, used to perturb the random number generator seed
+			int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
 
-		// Initialize random number generator
-		curandState RNGState;
-		curand_init(TWHash(PassCounter) + threadId, 0, 0, &RNGState);
+			// Initialize random number generator
+			curandState RNGState;
+			curand_init(TWHash(PassCounter) + threadId, 0, 0, &RNGState);
 
-		// Random test color
-		float3 TempColor = make_float3(curand_uniform(&RNGState), curand_uniform(&RNGState), curand_uniform(&RNGState));
+			// Random test color
+			float3 TempColor = make_float3(curand_uniform(&RNGState), curand_uniform(&RNGState), curand_uniform(&RNGState));
 
-		// Accumulate and average the color for each pass
-		AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + TempColor) / PassCounter;
+			// Test Ray direction
+			//TempColor = 0.5f + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
+			TempColor = TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, Rays[i].Direction.z);
 
-		TempColor = AccumulationBuffer[i];
+			// Accumulate and average the color for each pass
+			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + TempColor) / PassCounter;
 
-		// Make type conversion for OpenGL and perform gamma correction
-		HColor Color;
-		Color.Components = make_uchar4(
-			(unsigned char)(powf(TempColor.x, 1 / 2.2f) * 255),
-			(unsigned char)(powf(TempColor.y, 1 / 2.2f) * 255),
-			(unsigned char)(powf(TempColor.z, 1 / 2.2f) * 255), 1);
+			TempColor = AccumulationBuffer[i];
+			
 
-		// Pass pixel coordinates and pixel color in OpenGL to output buffer
-		Pixels[i] = make_float3(x, y, Color.Value);
+			// Make type conversion for OpenGL and perform gamma correction
+			// TODO: Use sRGB instead of flat 2.2 gamma correction?
+			HColor Color;
+			Color.Components = make_uchar4(
+				(unsigned char)(powf(TempColor.x, 1 / 2.2f) * 255),
+				(unsigned char)(powf(TempColor.y, 1 / 2.2f) * 255),
+				(unsigned char)(powf(TempColor.z, 1 / 2.2f) * 255), 1);
 
+			// Pass pixel coordinates and pixel color in OpenGL to output buffer
+			Pixels[i] = make_float3(x, y, Color.Value);
+
+		}
+		
 	}
 
 	__global__ void SavePNGKernel(
@@ -105,17 +179,24 @@ namespace HKernels
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
 		HCameraData* GPUCameraData,
-		unsigned int PassCounter)
+		unsigned int PassCounter,
+		HRay* Rays)
 	{
 
 		const dim3 BlockSize(16, 16, 1);
 		const dim3 GridSize(CameraData->Resolution.x / BlockSize.x, CameraData->Resolution.y / BlockSize.y, 1);
 
+		InitRaysKernel<<<GridSize, BlockSize>>>(
+			Rays,
+			GPUCameraData,
+			PassCounter);
+
 		TestRenderKernel<<<GridSize, BlockSize>>>(
 			Pixels,
 			AccumulationBuffer,
 			GPUCameraData,
-			PassCounter);
+			PassCounter,
+			Rays);
 
 	}
 

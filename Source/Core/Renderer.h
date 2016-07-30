@@ -24,6 +24,9 @@ public:
 	void PrepareScene(HScene* Scene);
 	void Reset();
 
+	unsigned int PassCounter;
+	unsigned int FPSCounter;
+
 protected:
 	/**
 	 * Initializes OpenGL Vertex Buffer Object and registers it for access by CUDA.
@@ -43,7 +46,6 @@ protected:
 	void DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource);
 
 private:
-	unsigned int PassCounter;
 	bool bFirstRenderPass;
 
 	void InitCUDA();
@@ -54,6 +56,7 @@ private:
 	HImage* Image;
 	HCameraData* CameraData;
 	HCameraData* GPUCameraData;
+	HRay* Rays;
 };
 
 #endif // RENDERER_H

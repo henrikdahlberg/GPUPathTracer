@@ -21,7 +21,6 @@
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
 unsigned int WINDOW_HANDLE = 0;
-unsigned int FRAME_COUNT = 0;
 float FIELD_OF_VIEW = 45;
 
 //////////////////////////////////////////////////////////////////////////
@@ -180,7 +179,7 @@ void InitGL(int argc, char** argv)
 void Display()
 {
 
-	++FRAME_COUNT;
+	Renderer->FPSCounter++;
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -217,18 +216,18 @@ void Timer(int Value)
 
 		sprintf(
 			WINDOW_TITLE,
-			"%s: %d FPS @ %d x %d",
+			"%s: %d FPS @ %d x %d, Iterations: %d",
 			WINDOW_TITLE_PREFIX,
-			FRAME_COUNT * 1000 / FPS_DISPLAY_REFRESH_RATE,
+			Renderer->FPSCounter * 1000 / FPS_DISPLAY_REFRESH_RATE,
 			WINDOW_WIDTH,
-			WINDOW_HEIGHT
-			);
+			WINDOW_HEIGHT,
+			Renderer->PassCounter);
 
 		glutSetWindowTitle(WINDOW_TITLE);
 		free(WINDOW_TITLE);
 	}
 
-	FRAME_COUNT = 0;
+	Renderer->FPSCounter = 0;
 	glutPostRedisplay();
 	glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
 

@@ -22,7 +22,8 @@ namespace HKernels
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
 		HCameraData* GPUCameraData,
-		unsigned int PassCounter);
+		unsigned int PassCounter,
+		HRay* Rays);
 
 	/**
 	 * Save GL context image stored in Pixels to PNG. Called in HImage::SavePNG().
