@@ -15,7 +15,7 @@ HRenderer::HRenderer(HCameraData* CameraData)
 	bFirstRenderPass = true;
 	this->CameraData = CameraData;
 	Image = new HImage(CameraData->Resolution);
-	InitCUDA();
+	InitGPUData();
 
 }
 
@@ -27,13 +27,13 @@ HRenderer::HRenderer(HCamera* Camera)
 	bFirstRenderPass = true;
 	this->CameraData = Camera->GetCameraData();
 	Image = new HImage(CameraData->Resolution);
-	InitCUDA();
+	InitGPUData();
 
 }
 
 HRenderer::~HRenderer()
 {
-	// TODO: Destructor, free CUDA pointers etc.
+	// TODO: Destructor, free CUDA pointers, delete Image, CameraData etc.
 }
 
 HImage* HRenderer::Render()
@@ -48,6 +48,7 @@ HImage* HRenderer::Render()
 
 	++PassCounter;
 
+	cudaStream_t CUDAStream;
 	checkCudaErrors(cudaStreamCreate(&CUDAStream));
 	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
 
@@ -62,7 +63,6 @@ HImage* HRenderer::Render()
 		Rays);
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
-
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
 
 	return Image;
@@ -73,6 +73,12 @@ void HRenderer::SetCameraData(HCameraData* CameraData)
 {
 
 	this->CameraData = CameraData;
+
+}
+
+void HRenderer::InitScene(HScene* Scene)
+{
+
 
 }
 
@@ -91,6 +97,23 @@ void HRenderer::Reset()
 
 }
 
+void HRenderer::Resize(HCameraData* CameraData)
+{
+	// TODO: This does not work properly.
+	// Does resize but the image but the rendering is messed up.
+	// Unsure if it's a GL mapping issue or a CUDA kernel issue.
+
+	FreeGPUData();
+
+	Image->Resize(CameraData->Resolution.x, CameraData->Resolution.y);
+	this->CameraData = CameraData;
+
+	PassCounter = 0;
+
+	InitGPUData();
+
+}
+
 void HRenderer::CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource, unsigned int BufferFlags)
 {
 
@@ -106,7 +129,6 @@ void HRenderer::CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource,
 
 	// Register VBO with CUDA and perform error checks
 	checkCudaErrors(cudaGraphicsGLRegisterBuffer(BufferResource, *Buffer, BufferFlags));
-	SDK_CHECK_ERROR_GL();
 
 }
 
@@ -117,13 +139,13 @@ void HRenderer::DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource)
 	checkCudaErrors(cudaGraphicsUnregisterResource(BufferResource));
 
 	// Delete VBO
-	glBindBuffer(1, *Buffer);
-	glDeleteBuffers(1, Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
+	glDeleteBuffers(GL_ARRAY_BUFFER, Buffer);
 	*Buffer = 0;
 
 }
 
-void HRenderer::InitCUDA()
+void HRenderer::InitGPUData()
 {
 
 	// Allocate memory on GPU for the accumulation buffer
@@ -136,9 +158,12 @@ void HRenderer::InitCUDA()
 	// Allocate memory on GPU for rays
 	checkCudaErrors(cudaMalloc(&Rays, Image->NumPixels * sizeof(HRay)));
 
+	// Allocate memory on GPU for 
+
 	CreateVBO(&(Image->Buffer), &(this->BufferResource), cudaGraphicsRegisterFlagsNone);
 
 	// Set up device synchronization stream
+	cudaStream_t CUDAStream;
 	checkCudaErrors(cudaStreamCreate(&CUDAStream));
 
 	// Map graphics resource to CUDA
@@ -153,5 +178,19 @@ void HRenderer::InitCUDA()
 
 	// Clean up synchronization stream
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
+
+}
+
+void HRenderer::FreeGPUData()
+{
+	// TODO: Finish and add comments.
+	// This is used when resizing the window which is not properly working.
+	// This should probably be called when moving the camera as well.
+
+	DeleteVBO(&(Image->Buffer), this->BufferResource);
+
+	checkCudaErrors(cudaFree(AccumulationBuffer));
+	checkCudaErrors(cudaFree(GPUCameraData));
+	checkCudaErrors(cudaFree(Rays));
 
 }

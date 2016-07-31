@@ -21,7 +21,6 @@
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
 unsigned int WINDOW_HANDLE = 0;
-float FIELD_OF_VIEW = 45;
 
 //////////////////////////////////////////////////////////////////////////
 // Pointers
@@ -79,9 +78,7 @@ void InitCamera()
 		delete Camera;
 	}
 
-	Camera = new HCamera();
-	Camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
-	Camera->SetFOV(FIELD_OF_VIEW);
+	Camera = new HCamera(WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	if (!Camera)
 	{
@@ -204,7 +201,10 @@ void Reshape(int NewWidth, int NewHeight)
 	WINDOW_HEIGHT = NewHeight;
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	// TODO: Change Camera, Renderer, CameraData and Image parameters as well
+	Camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
+	Renderer->Resize(Camera->GetCameraData());
+
+	// TODO: Not working properly
 }
 
 void Timer(int Value)

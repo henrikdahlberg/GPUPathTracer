@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-HCamera::HCamera()
+HCamera::HCamera(const unsigned int Width, const unsigned int Height)
 {
 	// TODO: Take window size as argument
 	// TODO: Pass scene parameters to set up initial position
@@ -15,9 +15,9 @@ HCamera::HCamera()
 	Roll = 0.0f;
 	CameraData.ApertureRadius = 0.05f;
 	CameraData.FocalDistance = 5.0f;
-	CameraData.FOV.x = 45.0f;
+	CameraData.FOV.x = 90.0f;
 
-	SetResolution(1280, 720);
+	SetResolution(Width, Height);
 }
 
 HCamera::~HCamera() {}

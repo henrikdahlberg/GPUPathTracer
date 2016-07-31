@@ -53,6 +53,8 @@ namespace HKernels
 
 			int i = (CameraData->Resolution.y - y - 1)*CameraData->Resolution.x + x;
 
+			// TODO: Maybe the camera axis computations should be handled CPU-side
+			// stored and updated only when the camera is moved
 			float3 Position = CameraData->Position;
 			float3 View = normalize(CameraData->View); // Shouldn't need normalization
 
@@ -127,14 +129,13 @@ namespace HKernels
 			float3 TempColor = make_float3(curand_uniform(&RNGState), curand_uniform(&RNGState), curand_uniform(&RNGState));
 
 			// Test Ray direction
-			//TempColor = 0.5f + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
-			TempColor = TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, Rays[i].Direction.z);
+			//TempColor = 0.5f + 0.5f*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
+			TempColor = 0.5f + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
 
 			// Accumulate and average the color for each pass
 			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + TempColor) / PassCounter;
 
 			TempColor = AccumulationBuffer[i];
-			
 
 			// Make type conversion for OpenGL and perform gamma correction
 			// TODO: Use sRGB instead of flat 2.2 gamma correction?

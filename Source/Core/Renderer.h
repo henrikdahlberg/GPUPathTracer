@@ -21,13 +21,16 @@ public:
 	HImage* Render();
 	
 	void SetCameraData(HCameraData* CameraData);
-	void PrepareScene(HScene* Scene);
+	void InitScene(HScene* Scene);
 	void Reset();
+	void Resize(HCameraData* CameraData);
 
 	unsigned int PassCounter;
 	unsigned int FPSCounter;
 
-protected:
+private:
+	bool bFirstRenderPass;
+
 	/**
 	 * Initializes OpenGL Vertex Buffer Object and registers it for access by CUDA.
 	 *
@@ -45,15 +48,15 @@ protected:
 	 */
 	void DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource);
 
-private:
-	bool bFirstRenderPass;
+	void InitGPUData();
+	void FreeGPUData();
 
-	void InitCUDA();
 	cudaGraphicsResource* BufferResource;
-	cudaStream_t CUDAStream;
 
 	float3* AccumulationBuffer;
 	HImage* Image;
+
+	HSceneData* SceneData;
 	HCameraData* CameraData;
 	HCameraData* GPUCameraData;
 	HRay* Rays;

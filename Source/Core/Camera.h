@@ -22,7 +22,7 @@ struct HCameraData
 class HCamera
 {
 public:
-	HCamera();
+	HCamera(const unsigned int Width, const unsigned int Height);
 	virtual ~HCamera();
 	
 	/**
