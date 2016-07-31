@@ -3,7 +3,6 @@
 
 #include <cuda_runtime.h>
 
-#include "Core/Geometry.h"
 #include "Utility/MathUtility.h"
 
 struct HCameraData
@@ -22,7 +21,7 @@ struct HCameraData
 class HCamera
 {
 public:
-	HCamera();
+	HCamera(const unsigned int Width, const unsigned int Height);
 	virtual ~HCamera();
 	
 	/**

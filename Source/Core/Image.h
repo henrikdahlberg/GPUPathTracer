@@ -18,11 +18,18 @@ public:
 	 * Saves current rendered image to .png file
 	 * 
 	 * TODO: If in the future we want to stop rendering and save .png
-	 * after, we need to handle memory allocation of Pixels to GPU again
+	 * after, we need to handle memory allocation of Pixels to GPU again.
+	 * Ideally I would like to be able to access Pixels or the GL buffer
+	 * directly on the CPU side somehow.
 	 *
 	 * @param Filename		Name of file to be saved.
 	 */
 	void SavePNG(const std::string &Filename);
+
+	/**
+	 * TODO: Doc
+	 */
+	void Resize(const unsigned int Width, const unsigned int Height);
 
 	uint2 Resolution;
 	GLuint Buffer;

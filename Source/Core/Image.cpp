@@ -54,3 +54,12 @@ void HImage::SavePNG(const std::string &Filename)
 	checkCudaErrors(cudaFree(GPUColorBytes));
 
 }
+
+void HImage::Resize(const unsigned int Width, const unsigned int Height)
+{
+
+	Resolution.x = Width;
+	Resolution.y = Height;
+	NumPixels = Width*Height;
+
+}

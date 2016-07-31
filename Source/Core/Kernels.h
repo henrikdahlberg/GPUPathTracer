@@ -2,6 +2,7 @@
 #define KERNELS_H
 
 #include "Camera.h"
+#include "Scene.h"
 
 namespace HKernels
 {
@@ -18,12 +19,13 @@ namespace HKernels
 	// The 'extern "C"' declaration is necessary in order to call
 	// CUDA kernels defined in .cu-files from .cpp files
 	extern "C" void LaunchRenderKernel(
-		float3* Pixels,
+		HImage* Image,
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
-		HCameraData* GPUCameraData,
 		unsigned int PassCounter,
-		HRay* Rays);
+		HRay* Rays,
+		HSphere* Spheres,
+		unsigned int NumSpheres);
 
 	/**
 	 * Save GL context image stored in Pixels to PNG. Called in HImage::SavePNG().

@@ -7,33 +7,20 @@
 #include <helper_cuda_gl.h>
 #include <iostream>
 
-HRenderer::HRenderer(HCameraData* CameraData)
-{
-
-	PassCounter = 0;
-	FPSCounter = 0;
-	bFirstRenderPass = true;
-	this->CameraData = CameraData;
-	Image = new HImage(CameraData->Resolution);
-	InitCUDA();
-
-}
-
 HRenderer::HRenderer(HCamera* Camera)
 {
 
 	PassCounter = 0;
 	FPSCounter = 0;
 	bFirstRenderPass = true;
-	this->CameraData = Camera->GetCameraData();
-	Image = new HImage(CameraData->Resolution);
-	InitCUDA();
+	Image = new HImage(Camera->GetCameraData()->Resolution);
+	InitGPUData(Camera->GetCameraData());
 
 }
 
 HRenderer::~HRenderer()
 {
-	// TODO: Destructor, free CUDA pointers etc.
+	// TODO: Destructor, free CUDA pointers, delete Image, CameraData etc.
 }
 
 HImage* HRenderer::Render()
@@ -42,52 +29,77 @@ HImage* HRenderer::Render()
 	if (bFirstRenderPass)
 	{
 		// TODO: Should be renamed to bReset or similar. Happens when camera is moved, reset GPU memory etc
+		// TODO: perhaps not even needed
 		bFirstRenderPass = false;
 
 	}
 
 	++PassCounter;
 
+	cudaStream_t CUDAStream;
 	checkCudaErrors(cudaStreamCreate(&CUDAStream));
 	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
 
-	// Launches CUDA kernel to modify OutImage pixels
-	// Temporary test kernel for now to verify accumulation buffer
+	// Launches CUDA kernel to modify Image pixels
+	// Temporary test kernel for now
 	HKernels::LaunchRenderKernel(
-		Image->GPUPixels,
+		Image,
 		AccumulationBuffer,
 		CameraData,
-		GPUCameraData,
 		PassCounter,
-		Rays);
+		Rays,
+		Spheres,
+		NumSpheres);
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
-
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
 
 	return Image;
 
 }
 
-void HRenderer::SetCameraData(HCameraData* CameraData)
+void HRenderer::InitScene(HScene* Scene)
 {
 
-	this->CameraData = CameraData;
+	NumSpheres = Scene->NumSpheres;
+	checkCudaErrors(cudaMalloc(&Spheres, NumSpheres*sizeof(HSphere)));
+	checkCudaErrors(cudaMemcpy(Spheres, Scene->Spheres, NumSpheres*sizeof(HSphere), cudaMemcpyHostToDevice));
+
+	
+	// TODO: Unified memory to skip this tedious deep copy
+	/*HSphere* TempSpheres;
+	checkCudaErrors(cudaMalloc(&SceneData, sizeof(HSceneData)));
+	checkCudaErrors(cudaMalloc(&TempSpheres, Scene->GetSceneData()->NumSpheres * sizeof(HSphere)));
+	checkCudaErrors(cudaMemcpy(this->SceneData, Scene->GetSceneData(), sizeof(HSceneData), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(TempSpheres, Scene->GetSceneData()->Spheres, Scene->GetSceneData()->NumSpheres * sizeof(HSphere), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(&(SceneData->Spheres), &TempSpheres, sizeof(HSphere*), cudaMemcpyHostToDevice));*/
+
+	// This unified memory snipped doesn't work, copies data but crashes when trying to access
+	// Spheres pointer in SceneData struct on GPU
+	/*checkCudaErrors(cudaMallocManaged(&SceneData, sizeof(HSceneData)));
+	checkCudaErrors(cudaMemcpy(this->SceneData, Scene->GetSceneData(), sizeof(HSceneData), cudaMemcpyHostToDevice));*/
 
 }
 
 void HRenderer::Reset()
 {
 
-	// TODO: Probably don't want to delete entire image object, just reset the pixels.
-	//			Should update CameraData/GPUCameraData, reset AccumulationBuffer etc.
-	if (Image != nullptr)
-	{
-		delete Image;
-		Image = nullptr;
-	}
+}
 
-	Image = new HImage(this->CameraData->Resolution);
+void HRenderer::Resize(HCameraData* CameraData)
+{
+	// TODO: This does not work properly.
+	// Does resize but the image but the rendering is messed up.
+	// Seems to extend or reduce rendered dimension twice the amount needed
+	// Unsure if it's a GL mapping issue or a CUDA kernel issue.
+
+	FreeGPUData();
+
+	Image->Resize(CameraData->Resolution.x, CameraData->Resolution.y);
+
+	PassCounter = 0;
+
+	InitGPUData(CameraData);
 
 }
 
@@ -106,7 +118,6 @@ void HRenderer::CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource,
 
 	// Register VBO with CUDA and perform error checks
 	checkCudaErrors(cudaGraphicsGLRegisterBuffer(BufferResource, *Buffer, BufferFlags));
-	SDK_CHECK_ERROR_GL();
 
 }
 
@@ -117,28 +128,31 @@ void HRenderer::DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource)
 	checkCudaErrors(cudaGraphicsUnregisterResource(BufferResource));
 
 	// Delete VBO
-	glBindBuffer(1, *Buffer);
-	glDeleteBuffers(1, Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
+	glDeleteBuffers(GL_ARRAY_BUFFER, Buffer);
 	*Buffer = 0;
 
 }
 
-void HRenderer::InitCUDA()
+void HRenderer::InitGPUData(HCameraData* CameraData)
 {
 
 	// Allocate memory on GPU for the accumulation buffer
 	checkCudaErrors(cudaMalloc(&AccumulationBuffer, Image->NumPixels * sizeof(float3)));
 
 	// Allocate memory on GPU for Camera data and copy over Camera data
-	checkCudaErrors(cudaMalloc(&GPUCameraData, sizeof(HCameraData)));
-	checkCudaErrors(cudaMemcpy(GPUCameraData, CameraData, sizeof(HCameraData), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMalloc(&(this->CameraData), sizeof(HCameraData)));
+	checkCudaErrors(cudaMemcpy(this->CameraData, CameraData, sizeof(HCameraData), cudaMemcpyHostToDevice));
 
 	// Allocate memory on GPU for rays
 	checkCudaErrors(cudaMalloc(&Rays, Image->NumPixels * sizeof(HRay)));
 
+	// Allocate memory on GPU for 
+
 	CreateVBO(&(Image->Buffer), &(this->BufferResource), cudaGraphicsRegisterFlagsNone);
 
 	// Set up device synchronization stream
+	cudaStream_t CUDAStream;
 	checkCudaErrors(cudaStreamCreate(&CUDAStream));
 
 	// Map graphics resource to CUDA
@@ -153,5 +167,18 @@ void HRenderer::InitCUDA()
 
 	// Clean up synchronization stream
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
+
+}
+
+void HRenderer::FreeGPUData()
+{
+	// TODO: Finish and add comments.
+	// This is used when resizing the window which is not properly working.
+	// This should probably be called when moving the camera as well.
+	DeleteVBO(&(Image->Buffer), this->BufferResource);
+
+	checkCudaErrors(cudaFree(AccumulationBuffer));
+	checkCudaErrors(cudaFree(CameraData));
+	checkCudaErrors(cudaFree(Rays));	
 
 }
