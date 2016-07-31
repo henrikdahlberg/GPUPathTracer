@@ -60,7 +60,10 @@ int main(int argc, char** argv)
 	Initialize(argc, argv);
 
 	// TODO: Move inside Initialize
+	Scene = new HScene();
+	Scene->LoadSceneFile();
 	Renderer = new HRenderer(Camera);
+	Renderer->InitScene(Scene);
 
 	// Rendering main loop
 	glutMainLoop();

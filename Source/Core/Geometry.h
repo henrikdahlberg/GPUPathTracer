@@ -20,7 +20,7 @@ struct HSphere
 	float3 Position;
 	float Radius;
 
-	HMaterial* Material;
+	HMaterial Material;
 
 };
 

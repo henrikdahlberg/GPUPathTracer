@@ -19,9 +19,13 @@ public:
 	void LoadSceneFile();
 
 	HSceneData* GetSceneData() { return &SceneData; }
+	
+	HSphere* Spheres;
+	unsigned int NumSpheres;
 
 private:
 	HSceneData SceneData;
+
 };
 
 #endif // SCENE_H

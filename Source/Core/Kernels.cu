@@ -1,3 +1,9 @@
+#include "Geometry.h"
+#include "Camera.h"
+#include "Scene.h"
+#include "Image.h"
+#include "Utility/MathUtility.h"
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
@@ -8,9 +14,7 @@
 #include <helper_cuda_gl.h>
 #include <math.h>
 
-#include "Geometry.h"
-#include "Camera.h"
-#include "Utility/MathUtility.h"
+
 
 // Used to convert color to a format that OpenGL can display
 // Represents the color in memory as either 1 float or 4 chars (32 bits)
@@ -39,6 +43,22 @@ namespace HKernels
 	//////////////////////////////////////////////////////////////////////////
 	// Global Kernels
 	//////////////////////////////////////////////////////////////////////////
+
+	// TODO: Delete, used for testing CUDA access to structs with pointers. Not fully working
+	__global__ void TestSceneDataKernel(
+		HSceneData* SceneData,
+		unsigned int PassCounter)
+	{
+		int x = blockIdx.x*blockDim.x + threadIdx.x;
+		int y = blockIdx.y*blockDim.y + threadIdx.y;
+
+		if (x == 0 && PassCounter == 1)
+		{
+			//printf("%f \n", SceneData->Spheres[0].Radius);
+			//printf("%d \n", SceneData->NumSpheres);
+		}
+	}
+
 	__global__ void InitRaysKernel(
 		HRay* Rays,
 		HCameraData* CameraData,
@@ -107,12 +127,14 @@ namespace HKernels
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
 		unsigned int PassCounter,
-		HRay* Rays)
+		HRay* Rays,
+		HSphere* Spheres,
+		unsigned int NumSpheres)
 	{
-		
+
 		int x = blockIdx.x*blockDim.x + threadIdx.x;
 		int y = blockIdx.y*blockDim.y + threadIdx.y;
-		
+
 		if (x < CameraData->Resolution.x && y < CameraData->Resolution.y)
 		{
 
@@ -130,7 +152,7 @@ namespace HKernels
 
 			// Test Ray direction
 			//TempColor = 0.5f + 0.5f*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
-			TempColor = 0.5f + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
+			TempColor = curand_uniform(&RNGState) + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
 
 			// Accumulate and average the color for each pass
 			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + TempColor) / PassCounter;
@@ -176,28 +198,34 @@ namespace HKernels
 	// External CUDA access launch function
 	//////////////////////////////////////////////////////////////////////////
 	extern "C" void LaunchRenderKernel(
-		float3* Pixels,
+		HImage* Image,
 		float3* AccumulationBuffer,
 		HCameraData* CameraData,
-		HCameraData* GPUCameraData,
 		unsigned int PassCounter,
-		HRay* Rays)
+		HRay* Rays,
+		HSphere* Spheres,
+		unsigned int NumSpheres)
 	{
 
 		const dim3 BlockSize(16, 16, 1);
-		const dim3 GridSize(CameraData->Resolution.x / BlockSize.x, CameraData->Resolution.y / BlockSize.y, 1);
+		const dim3 GridSize(Image->Resolution.x / BlockSize.x, Image->Resolution.y / BlockSize.y, 1);
 
 		InitRaysKernel<<<GridSize, BlockSize>>>(
 			Rays,
-			GPUCameraData,
+			CameraData,
 			PassCounter);
 
 		TestRenderKernel<<<GridSize, BlockSize>>>(
-			Pixels,
+			Image->GPUPixels,
 			AccumulationBuffer,
-			GPUCameraData,
+			CameraData,
 			PassCounter,
-			Rays);
+			Rays,
+			Spheres,
+			NumSpheres);
+
+		// TODO: Delete? Added to ensure printf-calls prints its output for debugging
+		cudaDeviceSynchronize();
 
 	}
 

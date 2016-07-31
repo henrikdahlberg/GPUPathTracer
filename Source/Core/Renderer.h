@@ -11,7 +11,6 @@
 class HRenderer
 {
 public:
-	HRenderer(HCameraData* CameraData);
 	HRenderer(HCamera* Camera);
 	virtual ~HRenderer();
 
@@ -20,7 +19,6 @@ public:
 	 */
 	HImage* Render();
 	
-	void SetCameraData(HCameraData* CameraData);
 	void InitScene(HScene* Scene);
 	void Reset();
 	void Resize(HCameraData* CameraData);
@@ -48,7 +46,7 @@ private:
 	 */
 	void DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource);
 
-	void InitGPUData();
+	void InitGPUData(HCameraData* CameraData);
 	void FreeGPUData();
 
 	cudaGraphicsResource* BufferResource;
@@ -56,10 +54,14 @@ private:
 	float3* AccumulationBuffer;
 	HImage* Image;
 
-	HSceneData* SceneData;
 	HCameraData* CameraData;
-	HCameraData* GPUCameraData;
 	HRay* Rays;
+
+	HSceneData* SceneData; // Not working, storing HSphere* for now
+	// Temporary Scene storage
+	HSphere* Spheres;
+	unsigned int NumSpheres;
+
 };
 
 #endif // RENDERER_H
