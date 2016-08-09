@@ -9,7 +9,7 @@ struct HMaterial
 {
 	// TODO: Color, Scattering properties, BSDF etc...
 	float3 Diffuse;
-	float3 Emissive;
+	float3 Emission;
 };
 
 #endif // MATERIAL_H

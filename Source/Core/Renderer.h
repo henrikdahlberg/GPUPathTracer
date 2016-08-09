@@ -26,6 +26,7 @@ public:
 	unsigned int PassCounter;
 	unsigned int FPSCounter;
 
+	
 private:
 	bool bFirstRenderPass;
 
@@ -50,10 +51,7 @@ private:
 	void FreeGPUData();
 
 	cudaGraphicsResource* BufferResource;
-
-	float3* AccumulationBuffer;
 	HImage* Image;
-
 	HCameraData* CameraData;
 	HRay* Rays;
 

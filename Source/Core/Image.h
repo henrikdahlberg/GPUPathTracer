@@ -34,7 +34,7 @@ public:
 	uint2 Resolution;
 	GLuint Buffer;
 	float3* Pixels;
-	float3* GPUPixels;
+	float3* AccumulationBuffer;
 	unsigned int NumPixels;
 
 	// TODO: Save HDR image format from Accumulation buffer

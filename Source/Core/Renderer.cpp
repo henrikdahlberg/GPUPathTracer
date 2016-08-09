@@ -44,7 +44,6 @@ HImage* HRenderer::Render()
 	// Temporary test kernel for now
 	HKernels::LaunchRenderKernel(
 		Image,
-		AccumulationBuffer,
 		CameraData,
 		PassCounter,
 		Rays,
@@ -138,7 +137,7 @@ void HRenderer::InitGPUData(HCameraData* CameraData)
 {
 
 	// Allocate memory on GPU for the accumulation buffer
-	checkCudaErrors(cudaMalloc(&AccumulationBuffer, Image->NumPixels * sizeof(float3)));
+	checkCudaErrors(cudaMalloc(&(Image->AccumulationBuffer), Image->NumPixels * sizeof(float3)));
 
 	// Allocate memory on GPU for Camera data and copy over Camera data
 	checkCudaErrors(cudaMalloc(&(this->CameraData), sizeof(HCameraData)));
@@ -158,9 +157,9 @@ void HRenderer::InitGPUData(HCameraData* CameraData)
 	// Map graphics resource to CUDA
 	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
 
-	// Set up access to mapped graphics resource through OutImage
+	// Set up access to mapped graphics resource through Image
 	size_t NumBytes;
-	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&(Image->GPUPixels), &NumBytes, BufferResource));
+	checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&(Image->Pixels), &NumBytes, BufferResource));
 
 	// Unmap graphics resource, ensures synchronization
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, CUDAStream));
@@ -172,12 +171,13 @@ void HRenderer::InitGPUData(HCameraData* CameraData)
 
 void HRenderer::FreeGPUData()
 {
+
 	// TODO: Finish and add comments.
 	// This is used when resizing the window which is not properly working.
 	// This should probably be called when moving the camera as well.
 	DeleteVBO(&(Image->Buffer), this->BufferResource);
 
-	checkCudaErrors(cudaFree(AccumulationBuffer));
+	checkCudaErrors(cudaFree(Image->AccumulationBuffer));
 	checkCudaErrors(cudaFree(CameraData));
 	checkCudaErrors(cudaFree(Rays));	
 

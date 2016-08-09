@@ -20,7 +20,6 @@ namespace HKernels
 	// CUDA kernels defined in .cu-files from .cpp files
 	extern "C" void LaunchRenderKernel(
 		HImage* Image,
-		float3* AccumulationBuffer,
 		HCameraData* CameraData,
 		unsigned int PassCounter,
 		HRay* Rays,

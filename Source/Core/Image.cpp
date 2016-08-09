@@ -19,20 +19,17 @@ HImage::HImage(unsigned int Width, unsigned int Height)
 	Resolution.x = Width;
 	Resolution.y = Height;
 	NumPixels = Width*Height;
-	Pixels = new float3[NumPixels];
 }
 
 HImage::HImage(uint2 Resolution)
 {
 	this->Resolution = Resolution;
 	NumPixels = this->Resolution.x*this->Resolution.y;
-	Pixels = new float3[NumPixels];
 }
 
 HImage::~HImage()
 {
-	delete[] Pixels;
-	Pixels = nullptr;
+
 }
 
 void HImage::SavePNG(const std::string &Filename)
@@ -43,7 +40,7 @@ void HImage::SavePNG(const std::string &Filename)
 	size_t Size = 3 * NumPixels*sizeof(unsigned char);
 	checkCudaErrors(cudaMalloc(&GPUColorBytes, Size));
 
-	HKernels::LaunchSavePNGKernel(GPUColorBytes, GPUPixels, Resolution);
+	HKernels::LaunchSavePNGKernel(GPUColorBytes, Pixels, Resolution);
 
 	checkCudaErrors(cudaMemcpy(ColorBytes, GPUColorBytes, Size, cudaMemcpyDeviceToHost));
 

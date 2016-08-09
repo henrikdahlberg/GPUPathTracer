@@ -28,7 +28,7 @@ unsigned int WINDOW_HANDLE = 0;
 HScene* Scene = nullptr;
 HCamera* Camera = nullptr;
 HRenderer* Renderer = nullptr;
-HImage* FinalImage = nullptr;
+HImage* Image = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 // Function declarations
@@ -108,7 +108,7 @@ void Initialize(int argc, char** argv)
 
 	// OpenGL callback registration
 	glutDisplayFunc(Display);
-	glutReshapeFunc(Reshape);
+	//glutReshapeFunc(Reshape);
 	glutIdleFunc(Idle);
 	glutTimerFunc(0,Timer,0);
 	glutKeyboardFunc(Keyboard);
@@ -183,9 +183,9 @@ void Display()
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	FinalImage = Renderer->Render();
+	Image = Renderer->Render();
 
-	glBindBuffer(GL_ARRAY_BUFFER, FinalImage->Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, Image->Buffer);
 	glVertexPointer(2, GL_FLOAT, 12, 0);
 	glColorPointer(4, GL_UNSIGNED_BYTE, 12, (GLvoid*)8);
 
