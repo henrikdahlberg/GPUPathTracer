@@ -25,7 +25,7 @@
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 256
-#define MAX_RAY_DEPTH 3 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
 
 // Used to convert color to a format that OpenGL can display
 // Represents the color in memory as either 1 float or 4 chars (32 bits)
@@ -102,11 +102,11 @@ namespace HKernels
 		// Compute orthonormal basis
 		float r2s = sqrtf(r2);
 		float3 w = Normal;
-		float3 u = normalize(cross((fabs(w.x) > .1 ? make_float3(0, 1, 0) : make_float3(1, 0, 0)), w));
+		float3 u = normalize(cross((fabs(w.x) > 0.1f ? make_float3(0.0f, 1.0f, 0.0f) : make_float3(1.0f, 0.0f, 0.0f)), w));
 		float3 v = cross(w, u);
 
 		// Return cosine weighted sample direction on hemisphere
-		return normalize(u*cos(r1)*r2s + v*sin(r1)*r2s + w*sqrtf(1 - r2));
+		return normalize(u*cos(r1)*r2s + v*sin(r1)*r2s + w*sqrtf(1.0f - r2));
 
 	}
 
@@ -174,8 +174,8 @@ namespace HKernels
 
 			// Compute middle point on camera image plane
 			float3 MiddlePoint = Position + View;
-			float3 Horizontal = HorizontalAxis * tan(CameraData->FOV.x * 0.5f);
-			float3 Vertical = VerticalAxis * tan(CameraData->FOV.y * 0.5f);
+			float3 Horizontal = HorizontalAxis * tan(CameraData->FOV.x * M_PI_2 * M_1_180);
+			float3 Vertical = VerticalAxis * tan(CameraData->FOV.y * M_PI_2 * M_1_180);
 
 			// Global thread ID, used to perturb the random number generator seed
 			int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
@@ -383,10 +383,14 @@ namespace HKernels
 			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + AccumulatedColors[i]) / PassCounter;
 
 			HColor Color;
+			//Color.Components = make_uchar4(
+			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].x, 1 / 2.2f) * 255, 0.0f, 255.0f)),
+			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].y, 1 / 2.2f) * 255, 0.0f, 255.0f)),
+			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].z, 1 / 2.2f) * 255, 0.0f, 255.0f)), 1);
 			Color.Components = make_uchar4(
-				(unsigned char)(powf(AccumulationBuffer[i].x, 1 / 2.2f) * 255),
-				(unsigned char)(powf(AccumulationBuffer[i].y, 1 / 2.2f) * 255),
-				(unsigned char)(powf(AccumulationBuffer[i].z, 1 / 2.2f) * 255), 1);
+				(unsigned char)(powf(clamp(AccumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255),
+				(unsigned char)(powf(clamp(AccumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255),
+				(unsigned char)(powf(clamp(AccumulationBuffer[i].z, 0.0f, 1.0f), 1 / 2.2f) * 255), 1);
 
 			// Pass pixel coordinates and pixel color in OpenGL to output buffer
 			Pixels[i] = make_float3(x, y, Color.Value);
@@ -501,9 +505,21 @@ namespace HKernels
 				NumSpheres);
 
 			// Remove terminated rays with stream compaction
-			/*thrust::device_ptr<int> DevPtr(LivePixels);
+			// Only works in 64-bit build!
+#ifdef _WIN64
+			thrust::device_ptr<int> DevPtr(LivePixels);
 			thrust::device_ptr<int> EndPtr = thrust::remove_if(DevPtr, DevPtr + NumLivePixels, IsNegative());
-			NumLivePixels = EndPtr.get() - LivePixels;*/
+			NumLivePixels = EndPtr.get() - LivePixels;
+#endif // _WIN64
+
+			// Debug print
+			// TODO: Remove
+			if (PassCounter == 1)
+			{
+				std::cout << "Current Ray depth: " << RayDepth << std::endl;
+				std::cout << "Number of live rays: " << NumLivePixels << std::endl;
+				std::cout << "Number of thread blocks: " << NewGridSize << std::endl;
+			}
 
 		}
 

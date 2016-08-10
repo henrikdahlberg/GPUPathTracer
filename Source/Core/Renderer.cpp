@@ -49,6 +49,11 @@ HImage* HRenderer::Render()
 		Rays,
 		Spheres,
 		NumSpheres);
+	
+	if (PassCounter == 10000)
+	{
+		Image->SavePNG("Images/CornellError.png");
+	}
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));

@@ -108,7 +108,7 @@ void Initialize(int argc, char** argv)
 
 	// OpenGL callback registration
 	glutDisplayFunc(Display);
-	//glutReshapeFunc(Reshape);
+	glutReshapeFunc(Reshape);
 	glutIdleFunc(Idle);
 	glutTimerFunc(0,Timer,0);
 	glutKeyboardFunc(Keyboard);
