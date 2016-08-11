@@ -58,32 +58,32 @@ namespace HKernels
 		float3 &IntersectionNormal)
 	{
 
-		float3 V = Ray.Origin - Sphere.Position;
-		float VDotDir = dot(V, Ray.Direction);
-		float Q = VDotDir * VDotDir - (dot(V, V) - Sphere.Radius * Sphere.Radius);
+		float3 OP = Sphere.Position - Ray.Origin;
+		float t;
+		float b = dot(OP, Ray.Direction);
+		float Discriminant = b*b - dot(OP, OP) + Sphere.Radius*Sphere.Radius;
 
-		if (Q < 0.0f)
+		if (Discriminant < 0)
 		{
 			return -1.0f;
 		}
+		
+		Discriminant = sqrtf(Discriminant);
 
-		float SqrtQ = sqrt(Q);
-		float t1 = -VDotDir + SqrtQ;
-		float t2 = -VDotDir - SqrtQ;
+		float t1 = b - Discriminant;
+		float t2 = b + Discriminant;
 
-		float t;
-
-		if (t1 < 0 && t2 < 0)
+		if (t1 > M_EPSILON)
 		{
-			return -1;
+			t = t1;
 		}
-		else if (t1 > 0 && t2 > 0)
+		else if (t2 > M_EPSILON)
 		{
-			t = min(t1, t2);
+			t = t2;
 		}
 		else
 		{
-			t = max(t1, t2);
+			return -1.0f;
 		}
 
 		IntersectionPoint = Ray.Origin + t*Ray.Direction;
@@ -99,14 +99,15 @@ namespace HKernels
 		const float r2)
 	{
 
-		// Compute orthonormal basis
-		float r2s = sqrtf(r2);
-		float3 w = Normal;
-		float3 u = normalize(cross((fabs(w.x) > 0.1f ? make_float3(0.0f, 1.0f, 0.0f) : make_float3(1.0f, 0.0f, 0.0f)), w));
-		float3 v = cross(w, u);
+		float c = sqrtf(r1);
+		float s = sqrtf(1.0f - c*c);
+		float t = r2 * M_2PI;
 
-		// Return cosine weighted sample direction on hemisphere
-		return normalize(u*cos(r1)*r2s + v*sin(r1)*r2s + w*sqrtf(1.0f - r2));
+		float3 w = fabs(Normal.x) < M_SQRT1_3 ? make_float3(1, 0, 0) : (fabs(Normal.y) < M_SQRT1_3 ? make_float3(0, 1, 0) : make_float3(0, 0, 1));
+		float3 u = normalize(cross(Normal, w));
+		float3 v = cross(Normal, u);
+
+		return c * Normal + (cos(t) * s * u) + (sin(t) * s * v);
 
 	}
 
@@ -177,12 +178,9 @@ namespace HKernels
 			float3 Horizontal = HorizontalAxis * tan(CameraData->FOV.x * M_PI_2 * M_1_180);
 			float3 Vertical = VerticalAxis * tan(CameraData->FOV.y * M_PI_2 * M_1_180);
 
-			// Global thread ID, used to perturb the random number generator seed
-			int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
-
 			// Initialize random number generator
 			curandState RNGState;
-			curand_init(TWHash(PassCounter) + threadId, 0, 0, &RNGState);
+			curand_init(TWHash(PassCounter) + i, 0, 0, &RNGState);
 
 			// Generate random pixel offsets for anti-aliasing
 			// Expected value is 0.5 i.e. middle of pixel
@@ -230,13 +228,9 @@ namespace HKernels
 			int x = i % CameraData->Resolution.x;
 			int y = CameraData->Resolution.y - (i - x) / CameraData->Resolution.x - 1;
 
-
-			// Global thread ID, used to perturb the random number generator seed
-			int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * (blockDim.x * blockDim.y) + (threadIdx.y * blockDim.x) + threadIdx.x;
-
 			// Initialize random number generator
 			curandState RNGState;
-			curand_init(TWHash(PassCounter) + threadId, 0, 0, &RNGState);
+			curand_init(TWHash(PassCounter) + i, 0, 0, &RNGState);
 
 			// Random test color
 			//float3 TempColor = make_float3(curand_uniform(&RNGState), curand_uniform(&RNGState), curand_uniform(&RNGState));
@@ -287,7 +281,7 @@ namespace HKernels
 
 			// Initialize random number generator
 			curandState RNGState;
-			curand_init(TWHash(PassCounter) + PixelIdx + RayDepth, 0, 0, &RNGState);
+			curand_init(TWHash(PassCounter) + TWHash(i) + TWHash(RayDepth), 0, 0, &RNGState);
 
 			float t;
 			float3 IntersectionPoint;
@@ -383,10 +377,6 @@ namespace HKernels
 			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + AccumulatedColors[i]) / PassCounter;
 
 			HColor Color;
-			//Color.Components = make_uchar4(
-			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].x, 1 / 2.2f) * 255, 0.0f, 255.0f)),
-			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].y, 1 / 2.2f) * 255, 0.0f, 255.0f)),
-			//	(unsigned char)(clamp(powf(AccumulationBuffer[i].z, 1 / 2.2f) * 255, 0.0f, 255.0f)), 1);
 			Color.Components = make_uchar4(
 				(unsigned char)(powf(clamp(AccumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255),
 				(unsigned char)(powf(clamp(AccumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255),
@@ -425,7 +415,7 @@ namespace HKernels
 	struct IsNegative
 	{
 		__host__ __device__
-			bool operator()(const int & x)
+		bool operator()(const int & x)
 		{
 			return x < 0;
 		}

@@ -52,7 +52,7 @@ HImage* HRenderer::Render()
 	
 	if (PassCounter == 10000)
 	{
-		Image->SavePNG("Images/CornellError.png");
+		//Image->SavePNG("Images/temp");
 	}
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
