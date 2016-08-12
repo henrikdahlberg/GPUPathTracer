@@ -41,9 +41,10 @@ HImage* HRenderer::Render()
 	checkCudaErrors(cudaGraphicsMapResources(1, &BufferResource, CUDAStream));
 
 	// Launches CUDA kernel to modify Image pixels
-	// Temporary test kernel for now
 	HKernels::LaunchRenderKernel(
 		Image,
+		AccumulatedColor,
+		ColorMask,
 		CameraData,
 		PassCounter,
 		Rays,
@@ -85,15 +86,26 @@ void HRenderer::InitScene(HScene* Scene)
 
 }
 
-void HRenderer::Reset()
+void HRenderer::Update(HCamera* Camera)
 {
+
+	FreeGPUData();
+
+
+	Image->Resize(
+		Camera->GetCameraData()->Resolution.x,
+		Camera->GetCameraData()->Resolution.y);
+
+	PassCounter = 0;
+
+	InitGPUData(Camera->GetCameraData());
 
 }
 
 void HRenderer::Resize(HCameraData* CameraData)
 {
 	// TODO: This does not work properly.
-	// Does resize but the image but the rendering is messed up.
+	// Does resize the image but the rendering is messed up.
 	// Seems to extend or reduce rendered dimension twice the amount needed
 	// Unsure if it's a GL mapping issue or a CUDA kernel issue.
 
@@ -133,8 +145,14 @@ void HRenderer::DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource)
 
 	// Delete VBO
 	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
-	glDeleteBuffers(GL_ARRAY_BUFFER, Buffer);
+	glDeleteBuffers(1, Buffer);
 	*Buffer = 0;
+
+	// Window resizing doesn't work, trying to completely delete the buffer
+	//Buffer = nullptr;
+	//BufferResource = nullptr;
+	//delete[] Buffer;
+	//delete[] BufferResource;
 
 }
 
@@ -151,7 +169,9 @@ void HRenderer::InitGPUData(HCameraData* CameraData)
 	// Allocate memory on GPU for rays
 	checkCudaErrors(cudaMalloc(&Rays, Image->NumPixels * sizeof(HRay)));
 
-	// Allocate memory on GPU for 
+	// Allocate memory on GPU for path tracing iteration
+	checkCudaErrors(cudaMalloc(&AccumulatedColor, Image->NumPixels * sizeof(float3)));
+	checkCudaErrors(cudaMalloc(&ColorMask, Image->NumPixels * sizeof(float3)));
 
 	CreateVBO(&(Image->Buffer), &(this->BufferResource), cudaGraphicsRegisterFlagsNone);
 
@@ -184,6 +204,8 @@ void HRenderer::FreeGPUData()
 
 	checkCudaErrors(cudaFree(Image->AccumulationBuffer));
 	checkCudaErrors(cudaFree(CameraData));
-	checkCudaErrors(cudaFree(Rays));	
+	checkCudaErrors(cudaFree(Rays));
+	checkCudaErrors(cudaFree(AccumulatedColor));
+	checkCudaErrors(cudaFree(ColorMask));
 
 }

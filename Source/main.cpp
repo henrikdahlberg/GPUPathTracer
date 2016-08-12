@@ -18,8 +18,8 @@
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
 #define FPS_DISPLAY_REFRESH_RATE 100 //ms
-unsigned int WINDOW_WIDTH = 1280;
-unsigned int WINDOW_HEIGHT = 720;
+unsigned int WINDOW_WIDTH = 640;
+unsigned int WINDOW_HEIGHT = 360;
 unsigned int WINDOW_HANDLE = 0;
 
 //////////////////////////////////////////////////////////////////////////
@@ -112,7 +112,6 @@ void Initialize(int argc, char** argv)
 	glutIdleFunc(Idle);
 	glutTimerFunc(0,Timer,0);
 	glutKeyboardFunc(Keyboard);
-	glutSpecialFunc(SpecialKeys);
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
 
@@ -246,13 +245,13 @@ void Keyboard(unsigned char Key, int, int)
 
 }
 
-void SpecialKeys(int Key, int, int)
-{
-
-}
-
 void Mouse(int Button, int State, int x, int y)
 {
+
+	Camera->SetPosition(make_float3(0.3f, 0.2f, 0.8f));
+	Renderer->Update(Camera);
+
+	Motion(x, y);
 
 }
 

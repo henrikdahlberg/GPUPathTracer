@@ -26,6 +26,7 @@
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 256
 #define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
+//#define STREAM_COMPACTION
 
 // Used to convert color to a format that OpenGL can display
 // Represents the color in memory as either 1 float or 4 chars (32 bits)
@@ -133,8 +134,8 @@ namespace HKernels
 	__global__ void InitData(
 		unsigned int NumPixels,
 		int* LivePixels,
-		float3* NotAbsorbedColors,
-		float3* AccumulatedColors)
+		float3* ColorMask,
+		float3* AccumulatedColor)
 	{
 
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -143,8 +144,8 @@ namespace HKernels
 		{
 
 			LivePixels[i] = i;
-			NotAbsorbedColors[i] = make_float3(1.0f, 1.0f, 1.0f);
-			AccumulatedColors[i] = make_float3(0.0f, 0.0f, 0.0f);
+			ColorMask[i] = make_float3(1.0f, 1.0f, 1.0f);
+			AccumulatedColor[i] = make_float3(0.0f, 0.0f, 0.0f);
 
 		}
 
@@ -261,8 +262,8 @@ namespace HKernels
 	}
 
 	__global__ void TraceKernel(
-		float3* NotAbsorbedColors,
-		float3* AccumulatedColors,
+		float3* AccumulatedColor,
+		float3* ColorMask,
 		int NumLivePixels,
 		int* LivePixels,
 		unsigned int PassCounter,
@@ -273,6 +274,10 @@ namespace HKernels
 	{
 
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+#if !(defined(_WIN64) && defined(STREAM_COMPACTION))
+		if (LivePixels[i] == -1) return;
+#endif
 
 		if (i < NumLivePixels)
 		{
@@ -288,6 +293,7 @@ namespace HKernels
 			float3 IntersectionNormal;
 
 			// Sphere intersection
+			// TODO: More elegant way of saving intersections
 			float tNearest = FLT_MAX;
 			float3 NearestIntersectionPoint;
 			float3 NearestIntersectionNormal;
@@ -323,13 +329,14 @@ namespace HKernels
 				HMaterial Material = Spheres[NearestSphereIdx].Material;
 
 				// Diffuse, Emission, TODO: Specular etc
-				AccumulatedColors[PixelIdx] += NotAbsorbedColors[PixelIdx] * Material.Emission;
-				NotAbsorbedColors[PixelIdx] *= Material.Diffuse;
+				AccumulatedColor[PixelIdx] += ColorMask[PixelIdx] * Material.Emission;
+				ColorMask[PixelIdx] *= Material.Diffuse;
 
 				// Compute new ray direction
 				// TODO: BSDF etc
-				
-				Rays[PixelIdx].Origin = NearestIntersectionPoint + M_EPSILON * NearestIntersectionNormal;
+				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
+				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
+				Rays[PixelIdx].Origin = NearestIntersectionPoint + 0.005f * NearestIntersectionNormal;
 				Rays[PixelIdx].Direction = HemisphereCosSample(
 					NearestIntersectionNormal,
 					curand_uniform(&RNGState),
@@ -341,16 +348,16 @@ namespace HKernels
 			{
 
 				// Add background color
-				AccumulatedColors[PixelIdx] += NotAbsorbedColors[PixelIdx] * make_float3(0.3f);
-				NotAbsorbedColors[PixelIdx] = make_float3(0.0f);
+				AccumulatedColor[PixelIdx] += ColorMask[PixelIdx] * make_float3(0.3f);
+				ColorMask[PixelIdx] = make_float3(0.0f);
 
 			}
 
 
-			if (length(NotAbsorbedColors[PixelIdx]) < M_EPSILON)
+			if (length(ColorMask[PixelIdx]) < M_EPSILON)
 			{
 
-				// Terminate ray
+				// Mark ray for termination
 				LivePixels[i] = -1;
 
 			}
@@ -412,10 +419,10 @@ namespace HKernels
 
 	}
 
+	// Stream compaction predicate
 	struct IsNegative
 	{
-		__host__ __device__
-		bool operator()(const int & x)
+		__host__ __device__ bool operator()(const int &x)
 		{
 			return x < 0;
 		}
@@ -426,6 +433,8 @@ namespace HKernels
 	//////////////////////////////////////////////////////////////////////////
 	extern "C" void LaunchRenderKernel(
 		HImage* Image,
+		float3* AccumulatedColor,
+		float3* ColorMask,
 		HCameraData* CameraData,
 		unsigned int PassCounter,
 		HRay* Rays,
@@ -438,26 +447,17 @@ namespace HKernels
 
 		unsigned int NumLivePixels = Image->NumPixels;
 		int* LivePixels = nullptr;
-		float3* NotAbsorbedColors = nullptr;
-		float3* AccumulatedColors = nullptr;
 
-		if (true/*!(PassCounter > 1)*/)
-		{
+		// Inefficient to do this every call but fine until I figure out
+		// how to resize allocated memory on device (after stream compaction)
+		checkCudaErrors(cudaMalloc(&LivePixels, Image->NumPixels*sizeof(int)));
 
-			// Extremely inefficient to do this every call...
-
-			checkCudaErrors(cudaMalloc(&LivePixels, Image->NumPixels*sizeof(unsigned int)));
-			checkCudaErrors(cudaMalloc(&NotAbsorbedColors, Image->NumPixels*sizeof(float3)));
-			checkCudaErrors(cudaMalloc(&AccumulatedColors, Image->NumPixels*sizeof(float3)));
-
-		}
-
-
+		// TODO: Combine these initialization kernels to avoid one kernel launch
 		InitData<<<GridSize, BlockSize>>>(
 			NumLivePixels,
 			LivePixels,
-			NotAbsorbedColors,
-			AccumulatedColors);
+			ColorMask,
+			AccumulatedColor);
 
 		// Generate initial rays from camera
 		InitCameraRays<<<GridSize, BlockSize>>>(
@@ -484,8 +484,8 @@ namespace HKernels
 			NewGridSize = (NumLivePixels + BlockSize - 1) / BlockSize;
 
 			TraceKernel<<<NewGridSize, BlockSize>>>(
-				NotAbsorbedColors,
-				AccumulatedColors,
+				AccumulatedColor,
+				ColorMask,
 				NumLivePixels,
 				LivePixels,
 				PassCounter,
@@ -496,11 +496,11 @@ namespace HKernels
 
 			// Remove terminated rays with stream compaction
 			// Only works in 64-bit build!
-#ifdef _WIN64
+#if defined(_WIN64) && defined(STREAM_COMPACTION)
 			thrust::device_ptr<int> DevPtr(LivePixels);
 			thrust::device_ptr<int> EndPtr = thrust::remove_if(DevPtr, DevPtr + NumLivePixels, IsNegative());
 			NumLivePixels = EndPtr.get() - LivePixels;
-#endif // _WIN64
+#endif
 
 			// Debug print
 			// TODO: Remove
@@ -513,16 +513,15 @@ namespace HKernels
 
 		}
 
+		// TODO: Move the accumulation and OpenGL interoperability into the core loop somehow
 		AccumulateKernel<<<GridSize, BlockSize>>>(
 			Image->Pixels,
 			Image->AccumulationBuffer,
-			AccumulatedColors,
+			AccumulatedColor,
 			CameraData,
 			PassCounter);
 
 		checkCudaErrors(cudaFree(LivePixels));
-		checkCudaErrors(cudaFree(NotAbsorbedColors));
-		checkCudaErrors(cudaFree(AccumulatedColors));
 
 	}
 

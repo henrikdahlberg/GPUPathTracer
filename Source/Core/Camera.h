@@ -42,6 +42,8 @@ public:
 	float2 GetFOV() { return CameraData.FOV; }
 	HCameraData* GetCameraData() { return &CameraData; }
 
+	void SetPosition(float3 NewPosition);
+
 protected:
 	void SetCameraData();
 

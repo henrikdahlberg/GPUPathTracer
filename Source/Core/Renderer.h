@@ -20,7 +20,9 @@ public:
 	HImage* Render();
 	
 	void InitScene(HScene* Scene);
-	void Reset();
+	void Update(HCamera* Camera);
+
+	// TODO: Broken, fix eventually
 	void Resize(HCameraData* CameraData);
 
 	unsigned int PassCounter;
@@ -54,6 +56,10 @@ private:
 	HImage* Image;
 	HCameraData* CameraData;
 	HRay* Rays;
+
+	// Used in path tracing iteration instead of recursion
+	float3* AccumulatedColor;
+	float3* ColorMask;
 
 	HSceneData* SceneData; // Not working, storing HSphere* for now
 	// Temporary Scene storage
