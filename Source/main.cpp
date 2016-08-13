@@ -17,9 +17,9 @@
 // Constants
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
-#define FPS_DISPLAY_REFRESH_RATE 100 //ms
-unsigned int WINDOW_WIDTH = 640;
-unsigned int WINDOW_HEIGHT = 360;
+#define FPS_DISPLAY_REFRESH_RATE 200 //ms
+unsigned int WINDOW_WIDTH = 1280;
+unsigned int WINDOW_HEIGHT = 720;
 unsigned int WINDOW_HANDLE = 0;
 
 //////////////////////////////////////////////////////////////////////////
@@ -162,13 +162,13 @@ void InitGL(int argc, char** argv)
 		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
-	
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glMatrixMode(GL_PROJECTION);
-	gluOrtho2D(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT);
-	glDisable(GL_DEPTH_TEST);
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 1.0, -1.0);
+	glMatrixMode(GL_MODELVIEW);
 
 }
 
@@ -201,12 +201,16 @@ void Reshape(int NewWidth, int NewHeight)
 
 	WINDOW_WIDTH = NewWidth;
 	WINDOW_HEIGHT = NewHeight;
+
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 1.0, -1.0);
+	glMatrixMode(GL_MODELVIEW);
 
 	Camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
 	Renderer->Resize(Camera->GetCameraData());
-
-	// TODO: Not working properly
 }
 
 void Timer(int Value)
@@ -247,9 +251,11 @@ void Keyboard(unsigned char Key, int, int)
 
 void Mouse(int Button, int State, int x, int y)
 {
-
-	Camera->SetPosition(make_float3(0.3f, 0.2f, 0.8f));
+	// TEMP
+	//Camera->SetPosition(make_float3(0.3f, 0.2f, 0.8f));
+	Scene->LoadSceneFile();
 	Renderer->Update(Camera);
+	Renderer->InitScene(Scene);
 
 	Motion(x, y);
 

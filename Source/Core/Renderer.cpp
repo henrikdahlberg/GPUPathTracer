@@ -21,6 +21,8 @@ HRenderer::HRenderer(HCamera* Camera)
 HRenderer::~HRenderer()
 {
 	// TODO: Destructor, free CUDA pointers, delete Image, CameraData etc.
+	FreeGPUData();
+
 }
 
 HImage* HRenderer::Render()
@@ -53,7 +55,7 @@ HImage* HRenderer::Render()
 	
 	if (PassCounter == 10000)
 	{
-		//Image->SavePNG("Images/temp");
+		//Image->SavePNG("Images/");
 	}
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &BufferResource, 0));
@@ -91,7 +93,6 @@ void HRenderer::Update(HCamera* Camera)
 
 	FreeGPUData();
 
-
 	Image->Resize(
 		Camera->GetCameraData()->Resolution.x,
 		Camera->GetCameraData()->Resolution.y);
@@ -104,10 +105,6 @@ void HRenderer::Update(HCamera* Camera)
 
 void HRenderer::Resize(HCameraData* CameraData)
 {
-	// TODO: This does not work properly.
-	// Does resize the image but the rendering is messed up.
-	// Seems to extend or reduce rendered dimension twice the amount needed
-	// Unsure if it's a GL mapping issue or a CUDA kernel issue.
 
 	FreeGPUData();
 
@@ -147,12 +144,6 @@ void HRenderer::DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource)
 	glBindBuffer(GL_ARRAY_BUFFER, *Buffer);
 	glDeleteBuffers(1, Buffer);
 	*Buffer = 0;
-
-	// Window resizing doesn't work, trying to completely delete the buffer
-	//Buffer = nullptr;
-	//BufferResource = nullptr;
-	//delete[] Buffer;
-	//delete[] BufferResource;
 
 }
 
@@ -197,9 +188,6 @@ void HRenderer::InitGPUData(HCameraData* CameraData)
 void HRenderer::FreeGPUData()
 {
 
-	// TODO: Finish and add comments.
-	// This is used when resizing the window which is not properly working.
-	// This should probably be called when moving the camera as well.
 	DeleteVBO(&(Image->Buffer), this->BufferResource);
 
 	checkCudaErrors(cudaFree(Image->AccumulationBuffer));
@@ -207,5 +195,7 @@ void HRenderer::FreeGPUData()
 	checkCudaErrors(cudaFree(Rays));
 	checkCudaErrors(cudaFree(AccumulatedColor));
 	checkCudaErrors(cudaFree(ColorMask));
+
+	// TODO: Free scene data
 
 }

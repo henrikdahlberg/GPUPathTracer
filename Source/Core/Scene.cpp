@@ -1,5 +1,8 @@
 #include "Scene.h"
 
+#include <stdlib.h>
+#include <time.h>
+
 HScene::HScene()
 {
 
@@ -10,7 +13,7 @@ HScene::~HScene() {}
 void HScene::LoadSceneFile()
 {
 
-	// Temporary scene setup, should read from file
+	/*// Closed Cornell box
 	NumSpheres = 8;
 	Spheres = new HSphere[NumSpheres];
 
@@ -60,10 +63,10 @@ void HScene::LoadSceneFile()
 	Spheres[7].Position = make_float3(0.0f, 1.0f + 1e5f, 0.0f);
 	Spheres[7].Radius = 1e5f;
 	Spheres[7].Material.Diffuse = make_float3(0.87f, 0.87f, 0.87f);
-	Spheres[7].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);
+	Spheres[7].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);*/
 
-	/*// Temporary scene setup, should read from file
-	NumSpheres = 6;
+	// Open sphere scene
+	/*NumSpheres = 6;
 	Spheres = new HSphere[NumSpheres];
 
 	// Yellow sphere
@@ -97,9 +100,52 @@ void HScene::LoadSceneFile()
 	Spheres[4].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);
 
 	// Blue sphere
-	Spheres[5].Position = make_float3(-0.7f, 0.4f, -0.3f);
+	Spheres[5].Position = make_float3(0.0f, 0.4f, -0.3f);
 	Spheres[5].Radius = 0.3f;
 	Spheres[5].Material.Diffuse = make_float3(0.40f, 0.87f, 0.87f);
 	Spheres[5].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);*/
+
+	// Random colored sphere scene
+	NumSpheres = 300;
+	Spheres = new HSphere[NumSpheres];
+
+	srand(time(nullptr));
+
+	for (int i = 0; i < NumSpheres-1; i++)
+	{
+
+		Spheres[i].Position = make_float3(
+			2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
+			0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
+			-4.0f*(float)rand() / (float)RAND_MAX);
+		Spheres[i].Radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
+		Spheres[i].Material.Diffuse = make_float3(
+			(float)rand() / (float)RAND_MAX,
+			(float)rand() / (float)RAND_MAX,
+			(float)rand() / (float)RAND_MAX);
+		
+		if ((float)rand() / (float)RAND_MAX > 0.8f)
+		{
+			Spheres[i].Material.Emission = make_float3(
+				5.0f * (float)rand() / (float)RAND_MAX,
+				5.0f * (float)rand() / (float)RAND_MAX,
+				5.4f * (float)rand() / (float)RAND_MAX);
+		}
+		else
+		{
+			Spheres[i].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);
+		}
+
+	}
+	
+	Spheres[NumSpheres - 2].Position = make_float3(0.0f, 3.0f, 0.0f);
+	Spheres[NumSpheres - 2].Radius = 0.8f;
+	Spheres[NumSpheres - 2].Material.Diffuse = make_float3(0.0f, 0.0f, 0.0f);
+	Spheres[NumSpheres - 2].Material.Emission = make_float3(5.0f, 5.0f, 5.4f);
+
+	Spheres[NumSpheres - 1].Position = make_float3(0.0f, -1e5f, 0.0f);
+	Spheres[NumSpheres - 1].Radius = 1e5f;
+	Spheres[NumSpheres - 1].Material.Diffuse = make_float3(0.15f, 0.15f, 0.15f);
+	Spheres[NumSpheres - 1].Material.Emission = make_float3(0.0f, 0.0f, 0.0f);
 
 }

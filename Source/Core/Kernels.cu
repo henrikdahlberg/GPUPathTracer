@@ -26,7 +26,7 @@
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 256
 #define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
-//#define STREAM_COMPACTION
+#define STREAM_COMPACTION
 
 // Used to convert color to a format that OpenGL can display
 // Represents the color in memory as either 1 float or 4 chars (32 bits)
@@ -60,7 +60,6 @@ namespace HKernels
 	{
 
 		float3 OP = Sphere.Position - Ray.Origin;
-		float t;
 		float b = dot(OP, Ray.Direction);
 		float Discriminant = b*b - dot(OP, OP) + Sphere.Radius*Sphere.Radius;
 
@@ -73,6 +72,7 @@ namespace HKernels
 
 		float t1 = b - Discriminant;
 		float t2 = b + Discriminant;
+		float t;
 
 		if (t1 > M_EPSILON)
 		{
@@ -176,8 +176,6 @@ namespace HKernels
 
 			// Compute middle point on camera image plane
 			float3 MiddlePoint = Position + View;
-			float3 Horizontal = HorizontalAxis * tan(CameraData->FOV.x * M_PI_2 * M_1_180);
-			float3 Vertical = VerticalAxis * tan(CameraData->FOV.y * M_PI_2 * M_1_180);
 
 			// Initialize random number generator
 			curandState RNGState;
@@ -190,8 +188,8 @@ namespace HKernels
 
 			// Compute point on image plane and account for focal distance
 			float3 PointOnImagePlane = Position + ((MiddlePoint
-				+ (2.0f * (OffsetX + x) / (CameraData->Resolution.x - 1.0f) - 1.0f) * Horizontal
-				+ (2.0f * (OffsetY + y) / (CameraData->Resolution.y - 1.0f) - 1.0f) * Vertical) - Position)
+				+ (2.0f * (OffsetX + x) / (CameraData->Resolution.x - 1.0f) - 1.0f) * HorizontalAxis * tan(CameraData->FOV.x * M_PI_2 * M_1_180)
+				+ (2.0f * (OffsetY + y) / (CameraData->Resolution.y - 1.0f) - 1.0f) * VerticalAxis * tan(CameraData->FOV.y * M_PI_2 * M_1_180)) - Position)
 				* CameraData->FocalDistance;
 
 			float ApertureRadius = CameraData->ApertureRadius;
@@ -209,56 +207,6 @@ namespace HKernels
 
 		}
 
-	}
-
-	__global__ void TestRenderKernel(
-		float3* Pixels,
-		float3* AccumulationBuffer,
-		HCameraData* CameraData,
-		unsigned int PassCounter,
-		HRay* Rays,
-		HSphere* Spheres,
-		unsigned int NumSpheres)
-	{
-
-		int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-		if (i < CameraData->Resolution.x*CameraData->Resolution.y)
-		{
-
-			int x = i % CameraData->Resolution.x;
-			int y = CameraData->Resolution.y - (i - x) / CameraData->Resolution.x - 1;
-
-			// Initialize random number generator
-			curandState RNGState;
-			curand_init(TWHash(PassCounter) + i, 0, 0, &RNGState);
-
-			// Random test color
-			//float3 TempColor = make_float3(curand_uniform(&RNGState), curand_uniform(&RNGState), curand_uniform(&RNGState));
-
-			// Test Ray direction
-			//float3 TempColor = make_float3(Rays[i].Direction.x, Rays[i].Direction.y, Rays[i].Direction.z);
-			float3 TempColor = 0.5f + 0.5f*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
-			//float3 TempColor = curand_uniform(&RNGState) + TempColor*make_float3(Rays[i].Direction.x, Rays[i].Direction.y, -Rays[i].Direction.z);
-
-			// Accumulate and average the color for each pass
-			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + TempColor) / PassCounter;
-
-			TempColor = AccumulationBuffer[i];
-
-			// Make type conversion for OpenGL and perform gamma correction
-			// TODO: Use sRGB instead of flat 2.2 gamma correction?
-			HColor Color;
-			Color.Components = make_uchar4(
-				(unsigned char)(powf(TempColor.x, 1 / 2.2f) * 255),
-				(unsigned char)(powf(TempColor.y, 1 / 2.2f) * 255),
-				(unsigned char)(powf(TempColor.z, 1 / 2.2f) * 255), 1);
-
-			// Pass pixel coordinates and pixel color in OpenGL to output buffer
-			Pixels[i] = make_float3(x, y, Color.Value);
-
-		}
-		
 	}
 
 	__global__ void TraceKernel(
@@ -336,7 +284,7 @@ namespace HKernels
 				// TODO: BSDF etc
 				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
 				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
-				Rays[PixelIdx].Origin = NearestIntersectionPoint + 0.005f * NearestIntersectionNormal;
+				Rays[PixelIdx].Origin = NearestIntersectionPoint + 0.0005f * NearestIntersectionNormal;
 				Rays[PixelIdx].Direction = HemisphereCosSample(
 					NearestIntersectionNormal,
 					curand_uniform(&RNGState),
@@ -369,7 +317,7 @@ namespace HKernels
 	__global__ void AccumulateKernel(
 		float3* Pixels,
 		float3* AccumulationBuffer,
-		float3* AccumulatedColors,
+		float3* AccumulatedColor,
 		HCameraData* CameraData,
 		unsigned int PassCounter)
 	{
@@ -381,7 +329,7 @@ namespace HKernels
 			int x = i % CameraData->Resolution.x;
 			int y = CameraData->Resolution.y - (i - x) / CameraData->Resolution.x - 1;
 
-			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + AccumulatedColors[i]) / PassCounter;
+			AccumulationBuffer[i] = (AccumulationBuffer[i] * (PassCounter - 1) + AccumulatedColor[i]) / PassCounter;
 
 			HColor Color;
 			Color.Components = make_uchar4(
@@ -395,7 +343,6 @@ namespace HKernels
 		}
 
 	}
-
 
 	__global__ void SavePNG(
 		unsigned char* ColorBytes,
@@ -495,7 +442,6 @@ namespace HKernels
 				NumSpheres);
 
 			// Remove terminated rays with stream compaction
-			// Only works in 64-bit build!
 #if defined(_WIN64) && defined(STREAM_COMPACTION)
 			thrust::device_ptr<int> DevPtr(LivePixels);
 			thrust::device_ptr<int> EndPtr = thrust::remove_if(DevPtr, DevPtr + NumLivePixels, IsNegative());
