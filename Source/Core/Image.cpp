@@ -14,17 +14,17 @@ HImage::HImage()
 
 }
 
-HImage::HImage(unsigned int Width, unsigned int Height)
+HImage::HImage(unsigned int width, unsigned int height)
 {
-	Resolution.x = Width;
-	Resolution.y = Height;
-	NumPixels = Width*Height;
+	resolution.x = width;
+	resolution.y = height;
+	numPixels = width*height;
 }
 
-HImage::HImage(uint2 Resolution)
+HImage::HImage(uint2 resolution)
 {
-	this->Resolution = Resolution;
-	NumPixels = this->Resolution.x*this->Resolution.y;
+	this->resolution = resolution;
+	numPixels = this->resolution.x*this->resolution.y;
 }
 
 HImage::~HImage()
@@ -32,31 +32,31 @@ HImage::~HImage()
 
 }
 
-void HImage::SavePNG(const std::string &Filename)
+void HImage::SavePNG(const std::string &filename)
 {
 
-	unsigned char* ColorBytes = new unsigned char[3 * NumPixels];
+	unsigned char* colorBytes = new unsigned char[3 * numPixels];
 	unsigned char* GPUColorBytes;
-	size_t Size = 3 * NumPixels*sizeof(unsigned char);
-	checkCudaErrors(cudaMalloc(&GPUColorBytes, Size));
+	size_t size = 3 * numPixels*sizeof(unsigned char);
+	checkCudaErrors(cudaMalloc(&GPUColorBytes, size));
 
-	HKernels::LaunchSavePNGKernel(GPUColorBytes, Pixels, Resolution);
+	HKernels::LaunchSavePNGKernel(GPUColorBytes, pixels, resolution);
 
-	checkCudaErrors(cudaMemcpy(ColorBytes, GPUColorBytes, Size, cudaMemcpyDeviceToHost));
+	checkCudaErrors(cudaMemcpy(colorBytes, GPUColorBytes, size, cudaMemcpyDeviceToHost));
 
-	std::string FinalFilename = Filename + ".png";
-	stbi_write_png(FinalFilename.c_str(), Resolution.x, Resolution.y, 3, ColorBytes, 3 * Resolution.x);
+	std::string finalFilename = filename + ".png";
+	stbi_write_png(finalFilename.c_str(), resolution.x, resolution.y, 3, colorBytes, 3 * resolution.x);
 
-	delete[] ColorBytes;
+	delete[] colorBytes;
 	checkCudaErrors(cudaFree(GPUColorBytes));
 
 }
 
-void HImage::Resize(const unsigned int Width, const unsigned int Height)
+void HImage::Resize(const unsigned int width, const unsigned int height)
 {
 
-	Resolution.x = Width;
-	Resolution.y = Height;
-	NumPixels = Width*Height;
+	resolution.x = width;
+	resolution.y = height;
+	numPixels = width*height;
 
 }

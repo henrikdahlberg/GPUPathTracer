@@ -25,9 +25,9 @@ unsigned int WINDOW_HANDLE = 0;
 //////////////////////////////////////////////////////////////////////////
 // Pointers
 //////////////////////////////////////////////////////////////////////////
-HScene* Scene = nullptr;
-HCamera* Camera = nullptr;
-HRenderer* Renderer = nullptr;
+HScene* scene = nullptr;
+HCamera* camera = nullptr;
+HRenderer* renderer = nullptr;
 HImage* Image = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
@@ -60,10 +60,10 @@ int main(int argc, char** argv)
 	Initialize(argc, argv);
 
 	// TODO: Move inside Initialize
-	Scene = new HScene();
-	Scene->LoadSceneFile();
-	Renderer = new HRenderer(Camera);
-	Renderer->InitScene(Scene);
+	scene = new HScene();
+	scene->LoadSceneFile();
+	renderer = new HRenderer(camera);
+	renderer->InitScene(scene);
 
 	// Rendering main loop
 	glutMainLoop();
@@ -75,15 +75,15 @@ int main(int argc, char** argv)
 //////////////////////////////////////////////////////////////////////////
 void InitCamera()
 {
-
-	if (Camera)
+	
+	if (camera)
 	{
-		delete Camera;
+		delete camera;
 	}
 
-	Camera = new HCamera(WINDOW_WIDTH, WINDOW_HEIGHT);
+	camera = new HCamera(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	if (!Camera)
+	if (!camera)
 	{
 		fprintf(
 			stderr,
@@ -178,13 +178,13 @@ void InitGL(int argc, char** argv)
 void Display()
 {
 
-	Renderer->FPSCounter++;
+	renderer->fpsCounter++;
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	Image = Renderer->Render();
+	Image = renderer->Render();
 
-	glBindBuffer(GL_ARRAY_BUFFER, Image->Buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, Image->buffer);
 	glVertexPointer(2, GL_FLOAT, 12, 0);
 	glColorPointer(4, GL_UNSIGNED_BYTE, 12, (GLvoid*)8);
 
@@ -193,14 +193,14 @@ void Display()
 	glDrawArrays(GL_POINTS, 0, WINDOW_WIDTH*WINDOW_HEIGHT);
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glutSwapBuffers();
-	
+
 }
 
-void Reshape(int NewWidth, int NewHeight)
+void Reshape(int width, int height)
 {
 
-	WINDOW_WIDTH = NewWidth;
-	WINDOW_HEIGHT = NewHeight;
+	WINDOW_WIDTH = width;
+	WINDOW_HEIGHT = height;
 
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -209,14 +209,14 @@ void Reshape(int NewWidth, int NewHeight)
 	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 1.0, -1.0);
 	glMatrixMode(GL_MODELVIEW);
 
-	Camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
-	Renderer->Resize(Camera->GetCameraData());
+	camera->SetResolution(WINDOW_WIDTH, WINDOW_HEIGHT);
+	renderer->Resize(camera->GetCameraData());
 }
 
-void Timer(int Value)
+void Timer(int value)
 {
 
-	if (Value != 0)
+	if (value != 0)
 	{
 		char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
 
@@ -224,16 +224,16 @@ void Timer(int Value)
 			WINDOW_TITLE,
 			"%s: %d FPS @ %d x %d, Iterations: %d",
 			WINDOW_TITLE_PREFIX,
-			Renderer->FPSCounter * 1000 / FPS_DISPLAY_REFRESH_RATE,
+			renderer->fpsCounter * 1000 / FPS_DISPLAY_REFRESH_RATE,
 			WINDOW_WIDTH,
 			WINDOW_HEIGHT,
-			Renderer->PassCounter);
+			renderer->passCounter);
 
 		glutSetWindowTitle(WINDOW_TITLE);
 		free(WINDOW_TITLE);
 	}
 
-	Renderer->FPSCounter = 0;
+	renderer->fpsCounter = 0;
 	glutPostRedisplay();
 	glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
 
@@ -249,13 +249,12 @@ void Keyboard(unsigned char Key, int, int)
 
 }
 
-void Mouse(int Button, int State, int x, int y)
+void Mouse(int button, int state, int x, int y)
 {
 	// TEMP
-	//Camera->SetPosition(make_float3(0.3f, 0.2f, 0.8f));
-	Scene->LoadSceneFile();
-	Renderer->Update(Camera);
-	Renderer->InitScene(Scene);
+	scene->LoadSceneFile();
+	renderer->Update(camera);
+	renderer->InitScene(scene);
 
 	Motion(x, y);
 

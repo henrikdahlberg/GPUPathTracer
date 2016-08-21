@@ -3,8 +3,10 @@
 
 #include "External/cutil_math.h"
 #include <math.h>
+#include <float.h>
 
 #define M_EPSILON  0.00001f
+#define M_INF	   FLT_MAX
 #define M_E        2.71828182845904523536f
 #define M_LOG2E    1.44269504088896340736f
 #define M_LOG10E   0.434294481903251827651f
@@ -29,13 +31,13 @@ namespace HMathUtility
 	 * Convert angle in radians to angle in degrees.
 	 * @param Rad	Angle in radians.
 	 */
-	extern inline float RadToDeg(float Rad) { return Rad * 180.0f * M_1_PI; }
+	extern inline float RadToDeg(float radians) { return radians * 180.0f * M_1_PI; }
 
 	/**
 	* Convert angle in degrees to angle in radians.
 	* @param Deg	Angle in degrees.
 	*/
-	extern inline float DegToRad(float Deg) { return Deg * M_PI * M_1_180; }
+	extern inline float DegToRad(float degrees) { return degrees * M_PI * M_1_180; }
 
 }
 

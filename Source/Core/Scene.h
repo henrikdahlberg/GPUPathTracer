@@ -5,8 +5,8 @@
 
 struct HSceneData
 {
-	HSphere* Spheres;
-	unsigned int NumSpheres;
+	HSphere* spheres;
+	unsigned int numSpheres;
 };
 
 class HScene
@@ -18,13 +18,13 @@ public:
 	// TODO: implement
 	void LoadSceneFile();
 
-	HSceneData* GetSceneData() { return &SceneData; }
+	HSceneData* GetSceneData() { return &sceneData; }
 	
-	HSphere* Spheres;
-	unsigned int NumSpheres;
+	HSphere* spheres;
+	unsigned int numSpheres;
 
 private:
-	HSceneData SceneData;
+	HSceneData sceneData;
 
 };
 

@@ -18,27 +18,25 @@ namespace HKernels
 
 	// The 'extern "C"' declaration is necessary in order to call
 	// CUDA kernels defined in .cu-files from .cpp files
-	extern "C" void LaunchRenderKernel(
-		HImage* Image,
-		float3* AccumulatedColor,
-		float3* ColorMask,
-		HCameraData* CameraData,
-		unsigned int PassCounter,
-		HRay* Rays,
-		HSphere* Spheres,
-		unsigned int NumSpheres);
+	extern "C" void LaunchRenderKernel(HImage* image,
+									   float3* accumulatedColor,
+									   float3* colorMask,
+									   HCameraData* cameraData,
+									   unsigned int passCounter,
+									   HRay* rays,
+									   HSphere* spheres,
+									   unsigned int numSpheres);
 
 	/**
-	 * Save GL context image stored in Pixels to PNG. Called in HImage::SavePNG().
+	 * Save GL context image stored in pixels to PNG. Called in HImage::SavePNG().
 	 * 
-	 * @param ColorBytes	Target storage pointer for data to be saved to PNG
-	 * @param Pixels		GL context image. Pixels.z contains color information
-	 * @param Resolution	The resolution of the image
+	 * @param colorBytes	Target storage pointer for data to be saved to PNG
+	 * @param pixels		GL context image. pixels.z contains color information
+	 * @param resolution	The resolution of the image
 	 */
-	extern "C" void LaunchSavePNGKernel(
-		unsigned char* ColorBytes,
-		float3* Pixels,
-		uint2 Resolution);
+	extern "C" void LaunchSavePNGKernel(unsigned char* colorBytes,
+										float3* pixels,
+										uint2 resolution);
 
 }
 

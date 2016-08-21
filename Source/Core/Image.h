@@ -10,8 +10,8 @@ class HImage
 {
 public:
 	HImage();
-	HImage(unsigned int Width, unsigned int Height);
-	HImage(uint2 Resolution);
+	HImage(unsigned int width, unsigned int height);
+	HImage(uint2 resolution);
 	virtual ~HImage();
 
 	/**
@@ -24,18 +24,18 @@ public:
 	 *
 	 * @param Filename		Name of file to be saved.
 	 */
-	void SavePNG(const std::string &Filename);
+	void SavePNG(const std::string &filename);
 
 	/**
 	 * TODO: Doc
 	 */
-	void Resize(const unsigned int Width, const unsigned int Height);
+	void Resize(const unsigned int width, const unsigned int height);
 
-	uint2 Resolution;
-	GLuint Buffer;
-	float3* Pixels;
-	float3* AccumulationBuffer;
-	unsigned int NumPixels;
+	uint2 resolution;
+	GLuint buffer;
+	float3* pixels;
+	float3* accumulationBuffer;
+	unsigned int numPixels;
 
 	// TODO: Save HDR image format from Accumulation buffer
 };

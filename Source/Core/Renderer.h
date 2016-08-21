@@ -11,7 +11,7 @@
 class HRenderer
 {
 public:
-	HRenderer(HCamera* Camera);
+	HRenderer(HCamera* camera);
 	virtual ~HRenderer();
 
 	/**
@@ -19,14 +19,12 @@ public:
 	 */
 	HImage* Render();
 	
-	void InitScene(HScene* Scene);
-	void Update(HCamera* Camera);
+	void InitScene(HScene* scene);
+	void Update(HCamera* camera);
+	void Resize(HCameraData* cameraData);
 
-	// TODO: Broken, fix eventually
-	void Resize(HCameraData* CameraData);
-
-	unsigned int PassCounter;
-	unsigned int FPSCounter;
+	unsigned int passCounter;
+	unsigned int fpsCounter;
 
 	
 private:
@@ -47,24 +45,24 @@ private:
 	 * @param VBO
 	 * @param VBOResource
 	 */
-	void DeleteVBO(GLuint* Buffer, cudaGraphicsResource* BufferResource);
+	void DeleteVBO(GLuint* buffer, cudaGraphicsResource* bufferResource);
 
-	void InitGPUData(HCameraData* CameraData);
+	void InitGPUData(HCameraData* cameraData);
 	void FreeGPUData();
 
-	cudaGraphicsResource* BufferResource;
-	HImage* Image;
-	HCameraData* CameraData;
-	HRay* Rays;
+	cudaGraphicsResource* bufferResource;
+	HImage* image;
+	HCameraData* cameraData;
+	HRay* rays;
 
 	// Used in path tracing iteration instead of recursion
-	float3* AccumulatedColor;
-	float3* ColorMask;
+	float3* accumulatedColor;
+	float3* colorMask;
 
-	HSceneData* SceneData; // Not working, storing HSphere* for now
+	HSceneData* sceneData; // Not working, storing HSphere* for now
 	// Temporary Scene storage
-	HSphere* Spheres;
-	unsigned int NumSpheres;
+	HSphere* spheres;
+	unsigned int numSpheres;
 
 };
 

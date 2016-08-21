@@ -2,41 +2,41 @@
 
 #include <math.h>
 
-HCamera::HCamera(const unsigned int Width, const unsigned int Height)
+HCamera::HCamera(const unsigned int width, const unsigned int height)
 {
 	// TODO: Pass scene parameters to set up initial position
 
-	CameraData.Position = make_float3(0.0f, 0.5f, 1.0f);
-	CameraData.View = make_float3(0.0f, 0.0f, -1.0f);
-	CameraData.Up = make_float3(0.0f, 1.0f, 0.0f);
-	Yaw = 0.0f;
-	Pitch = 0.0f;
-	Roll = 0.0f;
-	CameraData.ApertureRadius = 0.01f;
-	CameraData.FocalDistance = 2.5f;
-	CameraData.FOV.x = 90.0f;
+	cameraData.position = make_float3(0.0f, 0.5f, 1.0f);
+	cameraData.view = make_float3(0.0f, 0.0f, -1.0f);
+	cameraData.up = make_float3(0.0f, 1.0f, 0.0f);
+	yaw = 0.0f;
+	pitch = 0.0f;
+	roll = 0.0f;
+	cameraData.apertureRadius = 0.05f;
+	cameraData.focalDistance = 2.5f;
+	cameraData.FOV.x = 90.0f;
 
-	SetResolution(Width, Height);
+	SetResolution(width, height);
 }
 
 HCamera::~HCamera() {}
 
-void HCamera::SetResolution(const unsigned int Width, const unsigned int Height)
+void HCamera::SetResolution(const unsigned int width, const unsigned int height)
 {
-	CameraData.Resolution = make_uint2(Width, Height);
-	SetFOV(CameraData.FOV.x);
+	cameraData.resolution = make_uint2(width, height);
+	SetFOV(cameraData.FOV.x);
 }
 
-void HCamera::SetFOV(const float NewFOV)
+void HCamera::SetFOV(const float FOV)
 {
-	CameraData.FOV.x = NewFOV;
-	CameraData.FOV.y = HMathUtility::RadToDeg(atan(tan(HMathUtility::DegToRad(NewFOV)*0.5f)*((float)CameraData.Resolution.y / (float)CameraData.Resolution.x))*2.0f);
+	cameraData.FOV.x = FOV;
+	cameraData.FOV.y = HMathUtility::RadToDeg(atan(tan(HMathUtility::DegToRad(FOV)*0.5f)*((float)cameraData.resolution.y / (float)cameraData.resolution.x))*2.0f);
 }
 
-void HCamera::SetPosition(float3 NewPosition)
+void HCamera::SetPosition(float3 position)
 {
 
-	CameraData.Position = NewPosition;
+	cameraData.position = position;
 
 }
 

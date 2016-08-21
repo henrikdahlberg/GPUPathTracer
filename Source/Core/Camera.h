@@ -7,53 +7,53 @@
 
 struct HCameraData
 {
-	uint2 Resolution;
+	uint2 resolution;
 	float2 FOV;
-	float3 Position;
-	float3 View;
-	float3 Up;
+	float3 position;
+	float3 view;
+	float3 up;
 
 	// TODO: Lens model in separate class
-	float ApertureRadius;
-	float FocalDistance;
+	float apertureRadius;
+	float focalDistance;
 };
 
 class HCamera
 {
 public:
-	HCamera(const unsigned int Width, const unsigned int Height);
+	HCamera(const unsigned int width, const unsigned int height);
 	virtual ~HCamera();
 	
 	/**
 	 * Set camera resolution.
-	 * @param Width		Width in pixels.
-	 * @param Height	Height in pixels.
+	 * @param width		Width in pixels.
+	 * @param height	Height in pixels.
 	 */
-	void SetResolution(const unsigned int Width, const unsigned int Height);
+	void SetResolution(const unsigned int width, const unsigned int height);
 
 	/**
 	 * Set camera horizontal field of view and calculate
 	 * vertical field of view based on resolution.
-	 * @param NewFOV	Horizontal field of view in degrees.
+	 * @param FOV	Horizontal field of view in degrees.
 	 */
-	void SetFOV(const float NewFOV);
+	void SetFOV(const float FOV);
 
-	uint2 GetResolution() { return CameraData.Resolution; }
-	float2 GetFOV() { return CameraData.FOV; }
-	HCameraData* GetCameraData() { return &CameraData; }
+	uint2 GetResolution() { return cameraData.resolution; }
+	float2 GetFOV() { return cameraData.FOV; }
+	HCameraData* GetCameraData() { return &cameraData; }
 
-	void SetPosition(float3 NewPosition);
+	void SetPosition(float3 position);
 
 protected:
 	void SetCameraData();
 
 private:
 	//TODO Make Transform component
-	float Yaw;
-	float Pitch;
-	float Roll;
+	float yaw;
+	float pitch;
+	float roll;
 
-	HCameraData CameraData;
+	HCameraData cameraData;
 };
 
 #endif // CAMERA_H
