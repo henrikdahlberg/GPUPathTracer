@@ -3,15 +3,20 @@
 
 #include <cuda_runtime.h>
 
-#include "Utility/MathUtility.h"
+#ifndef GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
+#endif // GLM_FORCE_CUDA
+#include <glm/glm.hpp>
+
+#include <Utility/MathUtility.h>
 
 struct HCameraData
 {
-	uint2 resolution;
-	float2 FOV;
-	float3 position;
-	float3 view;
-	float3 up;
+	glm::uvec2 resolution;
+	glm::vec2 FOV;
+	glm::vec3 position;
+	glm::vec3 view;
+	glm::vec3 up;
 
 	// TODO: Lens model in separate class
 	float apertureRadius;
@@ -38,11 +43,11 @@ public:
 	 */
 	void SetFOV(const float FOV);
 
-	uint2 GetResolution() { return cameraData.resolution; }
-	float2 GetFOV() { return cameraData.FOV; }
+	glm::uvec2 GetResolution() { return cameraData.resolution; }
+	glm::vec2 GetFOV() { return cameraData.FOV; }
 	HCameraData* GetCameraData() { return &cameraData; }
 
-	void SetPosition(float3 position);
+	void SetPosition(glm::vec3 position);
 
 protected:
 	void SetCameraData();

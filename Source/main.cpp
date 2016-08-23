@@ -1,17 +1,22 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include "GL\glew.h"
-#include "GL\glut.h"
+#include <GL\glew.h>
+#include <GL\glut.h>
 #include <cuda_gl_interop.h>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <math.h>
 
-#include "Core/Scene.h"
-#include "Core/Camera.h"
-#include "Core/Renderer.h"
-#include "Core/Image.h"
+#ifndef GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
+#endif // GLM_FORCE_CUDA
+#include <glm/glm.hpp>
+
+#include <Core/Scene.h>
+#include <Core/Camera.h>
+#include <Core/Renderer.h>
+#include <Core/Image.h>
 
 //////////////////////////////////////////////////////////////////////////
 // Constants

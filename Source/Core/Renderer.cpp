@@ -1,5 +1,6 @@
-#include "Renderer.h"
+#include <Core/Renderer.h>
 
+#include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 #include <helper_functions.h>
@@ -50,11 +51,13 @@ HImage* HRenderer::Render()
 								 passCounter,
 								 rays,
 								 spheres,
-								 numSpheres);
+								 numSpheres,
+								 triangles,
+								 numTriangles);
 	
 	if (passCounter == 10000)
 	{
-		//Image->SavePNG("Images/");
+		image->SavePNG("Images/Bunny");
 	}
 
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &bufferResource, 0));
@@ -70,6 +73,10 @@ void HRenderer::InitScene(HScene* scene)
 	numSpheres = scene->numSpheres;
 	checkCudaErrors(cudaMalloc(&spheres, numSpheres*sizeof(HSphere)));
 	checkCudaErrors(cudaMemcpy(spheres, scene->spheres, numSpheres*sizeof(HSphere), cudaMemcpyHostToDevice));
+
+	numTriangles = scene->numTriangles;
+	checkCudaErrors(cudaMalloc(&triangles, numTriangles*sizeof(HTriangle)));
+	checkCudaErrors(cudaMemcpy(triangles, scene->triangles, numTriangles*sizeof(HTriangle), cudaMemcpyHostToDevice));
 
 }
 
@@ -112,7 +119,7 @@ void HRenderer::CreateVBO(GLuint* buffer,
 	glBindBuffer(GL_ARRAY_BUFFER, *buffer);
 
 	// Initialize buffer
-	glBufferData(GL_ARRAY_BUFFER, image->numPixels * sizeof(float3), 0, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, image->numPixels * sizeof(glm::vec3), 0, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Register VBO with CUDA and perform error checks
@@ -137,7 +144,7 @@ void HRenderer::InitGPUData(HCameraData* cameraData)
 {
 
 	// Allocate memory on GPU for the accumulation buffer
-	checkCudaErrors(cudaMalloc(&(image->accumulationBuffer), image->numPixels * sizeof(float3)));
+	checkCudaErrors(cudaMalloc(&(image->accumulationBuffer), image->numPixels * sizeof(glm::vec3)));
 
 	// Allocate memory on GPU for Camera data and copy over Camera data
 	checkCudaErrors(cudaMalloc(&(this->cameraData), sizeof(HCameraData)));
@@ -147,8 +154,8 @@ void HRenderer::InitGPUData(HCameraData* cameraData)
 	checkCudaErrors(cudaMalloc(&rays, image->numPixels * sizeof(HRay)));
 
 	// Allocate memory on GPU for path tracing iteration
-	checkCudaErrors(cudaMalloc(&accumulatedColor, image->numPixels * sizeof(float3)));
-	checkCudaErrors(cudaMalloc(&colorMask, image->numPixels * sizeof(float3)));
+	checkCudaErrors(cudaMalloc(&accumulatedColor, image->numPixels * sizeof(glm::vec3)));
+	checkCudaErrors(cudaMalloc(&colorMask, image->numPixels * sizeof(glm::vec3)));
 
 	CreateVBO(&(image->buffer), &(this->bufferResource), cudaGraphicsRegisterFlagsNone);
 

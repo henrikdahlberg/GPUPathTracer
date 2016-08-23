@@ -1,13 +1,11 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "Utility/External/stb_image_write.h"
-
-#include "Image.h"
-
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
 #include <iostream>
 
-#include "Kernels.h"
+#include <Utility/External/stb_image_write.h>
+#include <Core/Image.h>
+#include <Core/Kernels.h>
 
 HImage::HImage()
 {
@@ -21,7 +19,7 @@ HImage::HImage(unsigned int width, unsigned int height)
 	numPixels = width*height;
 }
 
-HImage::HImage(uint2 resolution)
+HImage::HImage(glm::uvec2 resolution)
 {
 	this->resolution = resolution;
 	numPixels = this->resolution.x*this->resolution.y;
@@ -40,7 +38,7 @@ void HImage::SavePNG(const std::string &filename)
 	size_t size = 3 * numPixels*sizeof(unsigned char);
 	checkCudaErrors(cudaMalloc(&GPUColorBytes, size));
 
-	HKernels::LaunchSavePNGKernel(GPUColorBytes, pixels, resolution);
+	HKernels::LaunchSavePNGKernel(GPUColorBytes, pixels, resolution.x, resolution.y);
 
 	checkCudaErrors(cudaMemcpy(colorBytes, GPUColorBytes, size, cudaMemcpyDeviceToHost));
 

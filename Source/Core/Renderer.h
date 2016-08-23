@@ -1,12 +1,18 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "GL/glew.h"
+#include <cuda.h>
+#include <GL/glew.h>
 
-#include "Scene.h"
-#include "Camera.h"
-#include "Image.h"
-#include "Kernels.h"
+#ifndef GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
+#endif // GLM_FORCE_CUDA
+#include <glm/glm.hpp>
+
+#include <Core/Scene.h>
+#include <Core/Camera.h>
+#include <Core/Image.h>
+#include <Core/Kernels.h>
 
 class HRenderer
 {
@@ -56,13 +62,15 @@ private:
 	HRay* rays;
 
 	// Used in path tracing iteration instead of recursion
-	float3* accumulatedColor;
-	float3* colorMask;
+	glm::vec3* accumulatedColor;
+	glm::vec3* colorMask;
 
 	HSceneData* sceneData; // Not working, storing HSphere* for now
 	// Temporary Scene storage
 	HSphere* spheres;
 	unsigned int numSpheres;
+	HTriangle* triangles;
+	unsigned int numTriangles;
 
 };
 

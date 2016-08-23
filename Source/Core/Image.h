@@ -1,17 +1,23 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include "GL/glew.h"
+#include <cuda.h>
+#include <GL/glew.h>
 #include <string>
 
-#include "Geometry.h"
+#ifndef GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
+#endif // GLM_FORCE_CUDA
+#include <glm/glm.hpp>
+
+#include <Core/Geometry.h>
 
 class HImage
 {
 public:
 	HImage();
 	HImage(unsigned int width, unsigned int height);
-	HImage(uint2 resolution);
+	HImage(glm::uvec2 resolution);
 	virtual ~HImage();
 
 	/**
@@ -31,10 +37,10 @@ public:
 	 */
 	void Resize(const unsigned int width, const unsigned int height);
 
-	uint2 resolution;
+	glm::uvec2 resolution;
 	GLuint buffer;
-	float3* pixels;
-	float3* accumulationBuffer;
+	glm::vec3* pixels;
+	glm::vec3* accumulationBuffer;
 	unsigned int numPixels;
 
 	// TODO: Save HDR image format from Accumulation buffer

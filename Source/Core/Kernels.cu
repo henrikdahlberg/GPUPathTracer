@@ -1,20 +1,19 @@
-#include "Geometry.h"
-#include "Camera.h"
-#include "Scene.h"
-#include "Image.h"
-#include "Utility/MathUtility.h"
-
+#include <Core/Geometry.h>
+#include <Core/Camera.h>
+#include <Core/Scene.h>
+#include <Core/Image.h>
+#include <Shapes/Sphere.h>
+#include <Utility/MathUtility.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_functions.h>
-#include "device_launch_parameters.h"
+#include <device_launch_parameters.h>
 #include <curand.h>
 #include <curand_kernel.h>
 #include <helper_functions.h>
 #include <helper_cuda.h>
 #include <helper_cuda_gl.h>
 #include <math.h>
-
 #include <thrust/random.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/functional.h>
@@ -22,19 +21,28 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
+#ifndef GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
+#endif // GLM_FORCE_CUDA
+#include <glm/glm.hpp>
+
 //////////////////////////////////////////////////////////////////////////
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
 #define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
-#define STREAM_COMPACTION
+#define STREAM_COMPACTION	
 
 // Used to convert color to a format that OpenGL can display
 // Represents the color in memory as either 1 float or 4 chars (32 bits)
 union HColor
 {
 	float value;
-	uchar4 components;
+	struct
+	{
+		unsigned char x, y, z, w;
+	} components;
+	//uchar4 components;
 };
 
 namespace HKernels
@@ -53,7 +61,7 @@ namespace HKernels
 		return s;
 	}
 
-	__device__ float3 HemisphereCosSample(const float3 normal,
+	__device__ glm::vec3 HemisphereCosSample(const glm::vec3 normal,
 										  const float r1,
 										  const float r2)
 	{
@@ -62,9 +70,9 @@ namespace HKernels
 		float s = sqrtf(1.0f - c*c);
 		float t = r2 * M_2PI;
 
-		float3 w = fabs(normal.x) < M_SQRT1_3 ? make_float3(1, 0, 0) : (fabs(normal.y) < M_SQRT1_3 ? make_float3(0, 1, 0) : make_float3(0, 0, 1));
-		float3 u = normalize(cross(normal, w));
-		float3 v = cross(normal, u);
+		glm::vec3 w = fabs(normal.x) < M_SQRT1_3 ? glm::vec3(1, 0, 0) : (fabs(normal.y) < M_SQRT1_3 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1));
+		glm::vec3 u = normalize(cross(normal, w));
+		glm::vec3 v = cross(normal, u);
 
 		return c * normal + (__cosf(t) * s * u) + (__sinf(t) * s * v);
 
@@ -76,8 +84,8 @@ namespace HKernels
 
 	__global__ void InitData(unsigned int numPixels,
 							 int* livePixels,
-							 float3* colorMask,
-							 float3* accumulatedColor)
+							 glm::vec3* colorMask,
+							 glm::vec3* accumulatedColor)
 	{
 
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -86,8 +94,8 @@ namespace HKernels
 		{
 
 			livePixels[i] = i;
-			colorMask[i] = make_float3(1.0f, 1.0f, 1.0f);
-			accumulatedColor[i] = make_float3(0.0f, 0.0f, 0.0f);
+			colorMask[i] = glm::vec3(1.0f, 1.0f, 1.0f);
+			accumulatedColor[i] = glm::vec3(0.0f, 0.0f, 0.0f);
 
 		}
 
@@ -108,15 +116,15 @@ namespace HKernels
 
 			// TODO: Maybe the camera axis computations should be handled CPU-side
 			// stored and updated only when the camera is moved
-			float3 position = cameraData->position;
-			float3 view = normalize(cameraData->view); // Shouldn't need normalization
+			glm::vec3 position = cameraData->position;
+			glm::vec3 view = normalize(cameraData->view); // Shouldn't need normalization
 
 			// Compute horizontal and vertical axes on camera image plane
-			float3 horizontalAxis = normalize(cross(view, cameraData->up));
-			float3 verticalAxis = normalize(cross(horizontalAxis, view));
+			glm::vec3 horizontalAxis = normalize(cross(view, cameraData->up));
+			glm::vec3 verticalAxis = normalize(cross(horizontalAxis, view));
 
 			// Compute middle point on camera image plane
-			float3 middle = position + view;
+			glm::vec3 middle = position + view;
 
 			// Initialize random number generator
 			curandState RNGState;
@@ -128,7 +136,7 @@ namespace HKernels
 			float OffsetY = curand_uniform(&RNGState) - 0.5f;
 
 			// Compute point on image plane and account for focal distance
-			float3 pointOnImagePlane = position + ((middle
+			glm::vec3 pointOnImagePlane = position + ((middle
 				+ (2.0f * (OffsetX + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * horizontalAxis * __tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
 				+ (2.0f * (OffsetY + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * verticalAxis * __tanf(cameraData->FOV.y * M_PI_2 * M_1_180)) - position)
 				* cameraData->focalDistance;
@@ -150,14 +158,16 @@ namespace HKernels
 
 	}
 
-__global__ void TraceKernel(float3* accumulatedColor,
-							float3* colorMask,
+__global__ void TraceKernel(glm::vec3* accumulatedColor,
+							glm::vec3* colorMask,
 							int numLivePixels,
 							int* livePixels,
 							unsigned int passCounter,
 							HRay* rays,
 							HSphere* spheres,
-							int numSpheres)
+							int numSpheres,
+							HTriangle* triangles,
+							int numTriangles)
 {
 
 	int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -177,8 +187,10 @@ __global__ void TraceKernel(float3* accumulatedColor,
 
 		// Sphere intersection
 		float t = M_INF;
-		HIntersection intersection;
+		HSurfaceInteraction intersection;
 		int nearestSphereIdx;
+		int nearestTriIdx;
+		bool nearestIsTri = false;
 
 		for (int sphereIdx = 0; sphereIdx < numSpheres; sphereIdx++)
 		{
@@ -190,11 +202,28 @@ __global__ void TraceKernel(float3* accumulatedColor,
 			}
 
 		}
+		
+		for (int triIdx = 0; triIdx < numTriangles; triIdx++)
+		{
+			if (triangles[triIdx].Intersect(rays[pixelIdx], t, intersection))
+			{
+				nearestTriIdx = triIdx;
+				nearestIsTri = true;
+			}
+		}
 
 		if (t < M_INF)
 		{
 
-			HMaterial material = spheres[nearestSphereIdx].material;
+			HMaterial material;
+			if (nearestIsTri)
+			{
+				 material = triangles[nearestTriIdx].material;
+			}
+			else
+			{
+				material = spheres[nearestSphereIdx].material;
+			}
 
 			// diffuse, emission, TODO: Specular etc
 			accumulatedColor[pixelIdx] += colorMask[pixelIdx] * material.emission;
@@ -214,8 +243,8 @@ __global__ void TraceKernel(float3* accumulatedColor,
 		{
 
 			// Add background color
-			accumulatedColor[pixelIdx] += colorMask[pixelIdx] * make_float3(0.3f);
-			colorMask[pixelIdx] = make_float3(0.0f);
+			accumulatedColor[pixelIdx] += colorMask[pixelIdx] * glm::vec3(0.3f);
+			colorMask[pixelIdx] = glm::vec3(0.0f);
 
 		}
 
@@ -231,9 +260,9 @@ __global__ void TraceKernel(float3* accumulatedColor,
 
 }
 
-	__global__ void AccumulateKernel(float3* pixels,
-									 float3* accumulationBuffer,
-									 float3* accumulatedColor,
+	__global__ void AccumulateKernel(glm::vec3* pixels,
+									 glm::vec3* accumulationBuffer,
+									 glm::vec3* accumulatedColor,
 									 HCameraData* cameraData,
 									 unsigned int passCounter)
 	{
@@ -245,29 +274,34 @@ __global__ void TraceKernel(float3* accumulatedColor,
 			int x = i % cameraData->resolution.x;
 			int y = cameraData->resolution.y - (i - x) / cameraData->resolution.x - 1;
 
-			accumulationBuffer[i] = (accumulationBuffer[i] * (passCounter - 1) + accumulatedColor[i]) / passCounter;
+			accumulationBuffer[i] = (accumulationBuffer[i] * (float)(passCounter - 1) + accumulatedColor[i]) / (float)passCounter;
 
 			HColor color;
-			color.components = make_uchar4((unsigned char)(powf(clamp(accumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255),
-										   (unsigned char)(powf(clamp(accumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255),
-										   (unsigned char)(powf(clamp(accumulationBuffer[i].z, 0.0f, 1.0f), 1 / 2.2f) * 255),
-										   1);
+			//color.components = make_uchar4((unsigned char)(powf(clamp(accumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255),
+			//							   (unsigned char)(powf(clamp(accumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255),
+			//							   (unsigned char)(powf(clamp(accumulationBuffer[i].z, 0.0f, 1.0f), 1 / 2.2f) * 255),
+			//							   1);
+			color.components.x = (unsigned char)(powf(clamp(accumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255);
+			color.components.y = (unsigned char)(powf(clamp(accumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255);
+			color.components.z = (unsigned char)(powf(clamp(accumulationBuffer[i].z, 0.0f, 1.0f), 1 / 2.2f) * 255);
+			color.components.w = 1;
 
 			// Pass pixel coordinates and pixel color in OpenGL to output buffer
-			pixels[i] = make_float3(x, y, color.value);
+			pixels[i] = glm::vec3(x, y, color.value);
 
 		}
 
 	}
 
 	__global__ void SavePNG(unsigned char* colorBytes,
-							float3* pixels,
-							uint2 resolution)
+							glm::vec3* pixels,
+							unsigned int width,
+							unsigned int height)
 	{
 
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-		if (i < resolution.x*resolution.y)
+		if (i < width*height)
 		{
 
 			HColor color;
@@ -294,13 +328,15 @@ __global__ void TraceKernel(float3* accumulatedColor,
 	// External CUDA access launch function
 	//////////////////////////////////////////////////////////////////////////
 	extern "C" void LaunchRenderKernel(HImage* image,
-									   float3* accumulatedColor,
-									   float3* colorMask,
+									   glm::vec3* accumulatedColor,
+									   glm::vec3* colorMask,
 									   HCameraData* cameraData,
 									   unsigned int passCounter,
 									   HRay* rays,
 									   HSphere* spheres,
-									   unsigned int numSpheres)
+									   unsigned int numSpheres,
+									   HTriangle* triangles,
+									   int numTriangles)
 	{
 
 		unsigned int blockSize = BLOCK_SIZE;
@@ -339,7 +375,9 @@ __global__ void TraceKernel(float3* accumulatedColor,
 													passCounter,
 													rays,
 													spheres,
-													numSpheres);
+													numSpheres,
+													triangles,
+													numTriangles);
 
 			// Remove terminated rays with stream compaction
 #if defined(_WIN64) && defined(STREAM_COMPACTION)
@@ -371,17 +409,19 @@ __global__ void TraceKernel(float3* accumulatedColor,
 	}
 
 	extern "C" void LaunchSavePNGKernel(unsigned char* colorBytes,
-										float3* pixels,
-										uint2 resolution)
+										glm::vec3* pixels,
+										unsigned int width,
+										unsigned int height)
 	{
 
 		unsigned int blockSize = BLOCK_SIZE;
-		unsigned int gridSize = (resolution.x*resolution.y + blockSize - 1) / blockSize;
+ 		unsigned int gridSize = (width*height + blockSize - 1) / blockSize;
 
 		checkCudaErrors(cudaDeviceSynchronize());
 		SavePNG<<<gridSize, blockSize>>>(colorBytes,
 										 pixels,
-										 resolution);
+										 width,
+										 height);
 		checkCudaErrors(cudaDeviceSynchronize());
 
 	}
