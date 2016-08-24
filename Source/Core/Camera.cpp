@@ -37,7 +37,7 @@ glm::mat4 HCamera::GetCameraToWorld() const {
 }
 
 glm::mat4 HCamera::GetWorldToCamera() const {
-
+	return glm::mat4();
 }
 
 void HCamera::SetCameraToWorld(const glm::mat4 m) {

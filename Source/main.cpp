@@ -196,7 +196,7 @@ void Reshape(int width, int height) {
 void Timer(int value) {
 
 	// TODO: Validate that this is working as intended
-	//		 weird framerates shown when rendering is slow
+	//		 weird frame rates shown when rendering is slow
 	if (value != 0) {
 		char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
 

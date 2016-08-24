@@ -1,7 +1,6 @@
 #ifndef INCLUDE_H
 #define INCLUDE_H
 
-
 //////////////////////////////////////////////////////////////////////////
 // Global project includes
 //////////////////////////////////////////////////////////////////////////
@@ -14,6 +13,7 @@
 
 #include <GL\glew.h>
 #include <GL\glut.h>
+#include <GLFW\glfw3.h>
 
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
