@@ -1,14 +1,6 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <math.h>
-
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
 
 #include <Core/Shape.h>
 #include <Core/Geometry.h>

@@ -1,52 +1,29 @@
 #ifndef INTERACTION_H
 #define INTERACTION_H
 
-#include <cuda.h>
-#include <cuda_runtime.h>
+#include <Core/Include.h>
 
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
+struct HInteraction {
 
-struct HInteraction
-{
-
-	__host__ __device__ HInteraction()
-	{
-
-	}
-
+	__host__ __device__ HInteraction() {}
 	__host__ __device__ HInteraction(const glm::vec3 &p)
-		: position(p)
-	{
-
-	}
+		: position(p) {}
 
 	glm::vec3 position;
 
 };
 
-struct HSurfaceInteraction : HInteraction
-{
-	
-	__host__ __device__ HSurfaceInteraction()
-	{
+struct HSurfaceInteraction : HInteraction {
 
-	}
-
+	__host__ __device__ HSurfaceInteraction() {}
 	__host__ __device__ HSurfaceInteraction(const glm::vec3 &p, const glm::vec3 &n)
-		: HInteraction(p), normal(n)
-	{
-
-	}
+		: HInteraction(p), normal(n) {}
 
 	glm::vec3 normal;
 
 };
 
-struct HVolumeInteraction : HInteraction
-{
+struct HVolumeInteraction : HInteraction {
 	// TODO: Subsurface scattering, volumetric scattering
 };
 

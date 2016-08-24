@@ -4,17 +4,7 @@
 #include <Core/Camera.h>
 #include <Core/Scene.h>
 
-namespace HKernels
-{
-
-	/**
-	* Integer hash function by Thomas Wang. Used to permute the render pass counter to be 
-	* used as seed in the curand random number generator on the GPU.
-	* 
-	* @param s				Seed to be hashed.
-	* @return				The hashed seed.
-	*/
-	__device__ unsigned int TWHash(unsigned int s);
+namespace HKernels {
 
 	// The 'extern "C"' declaration is necessary in order to call
 	// CUDA kernels defined in .cu-files from .cpp files

@@ -1,37 +1,25 @@
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <cuda_runtime.h>
-#include <helper_cuda.h>
-#include <iostream>
+#include <Core/Include.h>
 
+#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <Utility/External/stb_image_write.h>
+#endif // STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include <Core/Image.h>
 #include <Core/Kernels.h>
 
-HImage::HImage()
-{
-
-}
-
-HImage::HImage(unsigned int width, unsigned int height)
-{
+HImage::HImage(unsigned int width, unsigned int height) {
 	resolution.x = width;
 	resolution.y = height;
 	numPixels = width*height;
 }
 
-HImage::HImage(glm::uvec2 resolution)
-{
+HImage::HImage(glm::uvec2 resolution) {
 	this->resolution = resolution;
 	numPixels = this->resolution.x*this->resolution.y;
 }
 
-HImage::~HImage()
-{
-
-}
-
-void HImage::SavePNG(const std::string &filename)
-{
+void HImage::SavePNG(const std::string &filename) {
 
 	unsigned char* colorBytes = new unsigned char[3 * numPixels];
 	unsigned char* GPUColorBytes;
@@ -47,14 +35,10 @@ void HImage::SavePNG(const std::string &filename)
 
 	delete[] colorBytes;
 	checkCudaErrors(cudaFree(GPUColorBytes));
-
 }
 
-void HImage::Resize(const unsigned int width, const unsigned int height)
-{
-
+void HImage::Resize(const unsigned int width, const unsigned int height) {
 	resolution.x = width;
 	resolution.y = height;
 	numPixels = width*height;
-
 }

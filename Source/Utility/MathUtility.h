@@ -26,8 +26,23 @@
 #define M_SQRT1_3  0.577350269189625764509f
 #define M_1_180    0.005555555555555555556f
 
-namespace HMathUtility
-{
+namespace HMathUtility {
+
+	/**
+	* Integer hash function by Thomas Wang. Used to permute the render pass counter to be
+	* used as seed in the curand random number generator on the GPU.
+	*
+	* @param s				Seed to be hashed.
+	* @return				The hashed seed.
+	*/
+	__host__ __device__ inline unsigned int TWHash(unsigned int s) {
+		s = (s ^ 61) ^ (s >> 16);
+		s = s + (s << 3);
+		s = s ^ (s >> 4);
+		s = s * 0x27d4eb2d;
+		s = s ^ (s >> 15);
+		return s;
+	}
 
 	/**
 	 * Convert angle in radians to angle in degrees.

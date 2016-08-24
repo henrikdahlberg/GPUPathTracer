@@ -1,17 +1,4 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <GL\glew.h>
-#include <GL\glut.h>
-#include <cuda_gl_interop.h>
-#include <iostream>
-#include <sstream>
-#include <cmath>
-#include <math.h>
-
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
+#include <Core/Include.h>
 
 #include <Core/Scene.h>
 #include <Core/Camera.h>
@@ -33,7 +20,7 @@ unsigned int WINDOW_HANDLE = 0;
 HScene* scene = nullptr;
 HCamera* camera = nullptr;
 HRenderer* renderer = nullptr;
-HImage* Image = nullptr;
+HImage* image = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 // Function declarations
@@ -58,8 +45,7 @@ void Cleanup();
 //////////////////////////////////////////////////////////////////////////
 // Main loop
 //////////////////////////////////////////////////////////////////////////
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
 
 	// Main initialization
 	Initialize(argc, argv);
@@ -72,24 +58,20 @@ int main(int argc, char** argv)
 
 	// Rendering main loop
 	glutMainLoop();
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Camera initialization
 //////////////////////////////////////////////////////////////////////////
-void InitCamera()
-{
-	
-	if (camera)
-	{
+void InitCamera() {
+
+	if (camera) {
 		delete camera;
 	}
 
 	camera = new HCamera(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-	if (!camera)
-	{
+	if (!camera) {
 		fprintf(
 			stderr,
 			"ERROR: Failed Camera initialization.\n"
@@ -97,14 +79,12 @@ void InitCamera()
 		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Main initialization call
 //////////////////////////////////////////////////////////////////////////
-void Initialize(int argc, char** argv)
-{
+void Initialize(int argc, char** argv) {
 
 	InitCamera();
 
@@ -115,18 +95,16 @@ void Initialize(int argc, char** argv)
 	glutDisplayFunc(Display);
 	glutReshapeFunc(Reshape);
 	glutIdleFunc(Idle);
-	glutTimerFunc(0,Timer,0);
+	glutTimerFunc(0, Timer, 0);
 	glutKeyboardFunc(Keyboard);
 	glutMouseFunc(Mouse);
 	glutMotionFunc(Motion);
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL initialization
 //////////////////////////////////////////////////////////////////////////
-void InitGL(int argc, char** argv)
-{
+void InitGL(int argc, char** argv) {
 
 	// Create GL environment
 	glutInit(&argc, argv);
@@ -135,8 +113,7 @@ void InitGL(int argc, char** argv)
 	WINDOW_HANDLE = glutCreateWindow(WINDOW_TITLE_PREFIX);
 
 	// Window creation error handling
-	if (WINDOW_HANDLE < 1)
-	{
+	if (WINDOW_HANDLE < 1) {
 		fprintf(
 			stderr,
 			"ERROR: glutCreateWindow failed.\n"
@@ -148,8 +125,7 @@ void InitGL(int argc, char** argv)
 	// GLEW initialization error handling
 	GLenum GLEW_INIT_RESULT;
 	GLEW_INIT_RESULT = glewInit();
-	if (GLEW_INIT_RESULT != GLEW_OK)
-	{
+	if (GLEW_INIT_RESULT != GLEW_OK) {
 		fprintf(
 			stderr,
 			"ERROR: %s\n",
@@ -158,8 +134,7 @@ void InitGL(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	if (!glewIsSupported("GL_VERSION_2_0 ""GL_ARB_pixel_buffer_object"))
-	{
+	if (!glewIsSupported("GL_VERSION_2_0 ""GL_ARB_pixel_buffer_object")) {
 		fprintf(
 			stderr,
 			"ERROR: Support for necessary OpenGL extensions missing."
@@ -174,22 +149,20 @@ void InitGL(int argc, char** argv)
 	glLoadIdentity();
 	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 1.0, -1.0);
 	glMatrixMode(GL_MODELVIEW);
-
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Callback functions
 //////////////////////////////////////////////////////////////////////////
-void Display()
-{
+void Display() {
 
 	renderer->fpsCounter++;
-	
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	Image = renderer->Render();
 
-	glBindBuffer(GL_ARRAY_BUFFER, Image->buffer);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	image = renderer->Render();
+
+	glBindBuffer(GL_ARRAY_BUFFER, image->buffer);
 	glVertexPointer(2, GL_FLOAT, 12, 0);
 	glColorPointer(4, GL_UNSIGNED_BYTE, 12, (GLvoid*)8);
 
@@ -199,10 +172,12 @@ void Display()
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glutSwapBuffers();
 
+	// NSIGHT profiling, exit after one iteration
+	//cudaDeviceSynchronize();
+	//exit(EXIT_SUCCESS);
 }
 
-void Reshape(int width, int height)
-{
+void Reshape(int width, int height) {
 
 	WINDOW_WIDTH = width;
 	WINDOW_HEIGHT = height;
@@ -218,11 +193,11 @@ void Reshape(int width, int height)
 	renderer->Resize(camera->GetCameraData());
 }
 
-void Timer(int value)
-{
+void Timer(int value) {
 
-	if (value != 0)
-	{
+	// TODO: Validate that this is working as intended
+	//		 weird framerates shown when rendering is slow
+	if (value != 0) {
 		char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
 
 		sprintf(
@@ -241,31 +216,25 @@ void Timer(int value)
 	renderer->fpsCounter = 0;
 	glutPostRedisplay();
 	glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
-
 }
 
-void Idle(void)
-{
+void Idle(void) {
 	glutPostRedisplay();
 }
 
-void Keyboard(unsigned char Key, int, int)
-{
+void Keyboard(unsigned char Key, int, int) {
 
 }
 
-void Mouse(int button, int state, int x, int y)
-{
-	// TEMP
+void Mouse(int button, int state, int x, int y) {
+	// TEMP, randomizes scene
 	scene->LoadSceneFile();
 	renderer->Update(camera);
 	renderer->InitScene(scene);
 
 	Motion(x, y);
-
 }
 
-void Motion(int x, int y)
-{
+void Motion(int x, int y) {
 
 }

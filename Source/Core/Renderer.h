@@ -1,21 +1,14 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <cuda.h>
-#include <GL/glew.h>
-
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
+#include <Core/Include.h>
 
 #include <Core/Scene.h>
 #include <Core/Camera.h>
 #include <Core/Image.h>
 #include <Core/Kernels.h>
 
-class HRenderer
-{
+class HRenderer {
 public:
 	HRenderer(HCamera* camera);
 	virtual ~HRenderer();
@@ -24,7 +17,7 @@ public:
 	 * TODO: Doc
 	 */
 	HImage* Render();
-	
+
 	void InitScene(HScene* scene);
 	void Update(HCamera* camera);
 	void Resize(HCameraData* cameraData);
@@ -32,7 +25,6 @@ public:
 	unsigned int passCounter;
 	unsigned int fpsCounter;
 
-	
 private:
 	bool bFirstRenderPass;
 

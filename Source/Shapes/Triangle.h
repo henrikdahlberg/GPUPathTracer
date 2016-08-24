@@ -1,16 +1,7 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <math.h>
-
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
-#include <vector>
-
+#include <Core/Include.h>
 #include <Core/Shape.h>
 #include <Core/Geometry.h>
 #include <Core/Material.h>
@@ -21,10 +12,7 @@ struct HTriangle;
 struct HTriangleMesh
 {
 
-	HTriangleMesh()
-	{
-
-	}
+	HTriangleMesh() {}
 
 	~HTriangleMesh() {}
 
@@ -41,16 +29,10 @@ struct HTriangleMesh
 struct HTriangle : HShape
 {
 
-	HTriangle()
-	{
-
-	}
+	HTriangle() {}
 
 	HTriangle(glm::vec3 vert0, glm::vec3 vert1, glm::vec3 vert2)
-		: v0(vert0), v1(vert1), v2(vert2)
-	{
-		
-	}
+		: v0(vert0), v1(vert1), v2(vert2) {}
 
 	__host__ __device__ bool Intersect(HRay &ray, float &t,
 									   HSurfaceInteraction &intersection)
@@ -99,6 +81,8 @@ struct HTriangle : HShape
 
 	}
 
+
+	__host__ __device__ HBoundingBox Bounds() const { return Union(HBoundingBox(v0, v1), v2); }
 	//const int meshID;
 
 	glm::vec3 v0;

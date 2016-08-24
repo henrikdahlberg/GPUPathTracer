@@ -14,8 +14,8 @@ struct HSceneData
 class HScene
 {
 public:
-	HScene();
-	virtual ~HScene();
+	HScene() {}
+	virtual ~HScene() {}
 
 	// TODO: implement
 	void LoadSceneFile();
@@ -24,7 +24,6 @@ public:
 	
 	HTriangle* triangles;
 	unsigned int numTriangles;
-
 	HSphere* spheres;
 	unsigned int numSpheres;
 

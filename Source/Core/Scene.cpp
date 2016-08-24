@@ -1,25 +1,9 @@
-#include <stdlib.h>
-#include <time.h>
-#include <cuda.h>
-
-#ifndef GLM_FORCE_CUDA
-#define GLM_FORCE_CUDA
-#endif // GLM_FORCE_CUDA
-#include <glm/glm.hpp>
+#include <Core/Include.h>
 
 #include <Core/Scene.h>
 #include <Shapes/Sphere.h>
 
-HScene::HScene()
-{
-
-}
-
-HScene::~HScene() {}
-
-void HScene::LoadSceneFile()
-{
-
+void HScene::LoadSceneFile() {
 	// Closed Cornell box
 	/*NumSpheres = 8;
 	Spheres = new HSphere[NumSpheres];
@@ -113,64 +97,61 @@ void HScene::LoadSceneFile()
 	Spheres[5].Material.emission = glm::vec3(0.0f, 0.0f, 0.0f);*/
 
 	// Random colored sphere scene
-	numSpheres = 2;
+	numSpheres = 300;
 	spheres = new HSphere[numSpheres];
 
 	srand(time(nullptr));
 
-	for (int i = 0; i < numSpheres-2; i++)
-	{
+	for (int i = 0; i < numSpheres - 2; i++) {
 
-		spheres[i].position = glm::vec3(
-			2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
-			0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
-			-4.0f*(float)rand() / (float)RAND_MAX);
+		spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
+										0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
+										-4.0f*(float)rand() / (float)RAND_MAX);
 		spheres[i].radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
-		spheres[i].material.diffuse = glm::vec3(
-			(float)rand() / (float)RAND_MAX,
-			(float)rand() / (float)RAND_MAX,
-			(float)rand() / (float)RAND_MAX);
-		
-		if ((float)rand() / (float)RAND_MAX > 0.8f)
-		{
-			spheres[i].material.emission = glm::vec3(
-				5.0f * (float)rand() / (float)RAND_MAX,
-				5.0f * (float)rand() / (float)RAND_MAX,
-				5.4f * (float)rand() / (float)RAND_MAX);
+		spheres[i].material.diffuse = glm::vec3((float)rand() / (float)RAND_MAX,
+												(float)rand() / (float)RAND_MAX,
+												(float)rand() / (float)RAND_MAX);
+
+		if ((float)rand() / (float)RAND_MAX > 0.8f) {
+			spheres[i].material.emission = glm::vec3(5.0f * (float)rand() / (float)RAND_MAX,
+													 5.0f * (float)rand() / (float)RAND_MAX,
+													 5.4f * (float)rand() / (float)RAND_MAX);
 		}
-		else
-		{
+		else {
 			spheres[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 		}
-
 	}
-	
+
 	spheres[numSpheres - 2].position = glm::vec3(0.0f, 3.0f, 0.0f);
 	spheres[numSpheres - 2].radius = 0.8f;
 	spheres[numSpheres - 2].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
 	spheres[numSpheres - 2].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
 
-	/*spheres[numSpheres - 1].position = glm::vec3(0.0f, -1e5f, 0.0f);
+	spheres[numSpheres - 1].position = glm::vec3(0.0f, -1e5f, 0.0f);
 	spheres[numSpheres - 1].radius = 1e5f;
 	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
-	spheres[numSpheres - 1].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);*/
+	spheres[numSpheres - 1].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	spheres[numSpheres - 1].position = glm::vec3(0.0f, -3.0f, 1.0f);
-	spheres[numSpheres - 1].radius = 0.8f;
-	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
-
-	// temp
-	HTriangleMesh mesh;
-	fileLoader.LoadOBJ("bunny2.obj", mesh);
+	// Temp meshloading
+	/*HTriangleMesh mesh;
+	fileLoader.LoadOBJ("bunny.obj", mesh);
 
 	numTriangles = mesh.triangles.size();
 	triangles = new HTriangle[numTriangles];
 	for (int i = 0; i < numTriangles; i++)
 	{
-		triangles[i] = mesh.triangles[i];
+	triangles[i] = mesh.triangles[i];
+	triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
+	triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	}*/
+	numTriangles = 1;
+
+	triangles = new HTriangle[numTriangles];
+	for (int i = 0; i < numTriangles; i++) {
+		triangles[i].v0 = glm::vec3(-0.5f, 0.2f, 0.3f);
+		triangles[i].v1 = glm::vec3(0.5f, 0.2f, 0.0f);
+		triangles[i].v2 = glm::vec3(0.0f, 0.5f, -0.3f);
 		triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
 		triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 	}
-
 }

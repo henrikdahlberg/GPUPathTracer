@@ -1,9 +1,7 @@
 #ifndef SHAPE_H
 #define SHAPE_H
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-
+#include <Core/Include.h>
 #include <Core/Geometry.h>
 #include <Core/Material.h>
 #include <Core/Interaction.h>
