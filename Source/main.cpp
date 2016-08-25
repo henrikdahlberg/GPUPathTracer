@@ -12,7 +12,6 @@
 #define FPS_DISPLAY_REFRESH_RATE 200 //ms
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
-unsigned int WINDOW_HANDLE = 0;
 
 //////////////////////////////////////////////////////////////////////////
 // Pointers
@@ -21,6 +20,7 @@ HScene* scene = nullptr;
 HCamera* camera = nullptr;
 HRenderer* renderer = nullptr;
 HImage* image = nullptr;
+GLFWwindow* window = nullptr;
 
 //////////////////////////////////////////////////////////////////////////
 // Function declarations
@@ -36,7 +36,7 @@ void Display();
 void Reshape(int, int);
 void Timer(int);
 void Idle(void);
-void Keyboard(unsigned char Key, int, int);
+void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mode);
 void SpecialKeys(int Key, int, int);
 void Mouse(int Button, int State, int x, int y);
 void Motion(int x, int y);
@@ -50,14 +50,15 @@ int main(int argc, char** argv) {
 	// Main initialization
 	Initialize(argc, argv);
 
-	// TODO: Move inside Initialize
-	scene = new HScene();
-	scene->LoadSceneFile();
-	renderer = new HRenderer(camera);
-	renderer->InitScene(scene);
-
 	// Rendering main loop
-	glutMainLoop();
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+		Display();
+		glfwSwapBuffers(window);
+	}
+
+	glfwTerminate();
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,10 +73,7 @@ void InitCamera() {
 	camera = new HCamera(WINDOW_WIDTH, WINDOW_HEIGHT);
 
 	if (!camera) {
-		fprintf(
-			stderr,
-			"ERROR: Failed Camera initialization.\n"
-			);
+		fprintf(stderr, "ERROR: Failed Camera initialization.\n");
 		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
@@ -91,14 +89,20 @@ void Initialize(int argc, char** argv) {
 	// Initialize GL
 	InitGL(argc, argv);
 
+	scene = new HScene();
+	scene->LoadSceneFile();
+	renderer = new HRenderer(camera);
+	renderer->InitScene(scene);
+
 	// OpenGL callback registration
-	glutDisplayFunc(Display);
-	glutReshapeFunc(Reshape);
-	glutIdleFunc(Idle);
-	glutTimerFunc(0, Timer, 0);
-	glutKeyboardFunc(Keyboard);
-	glutMouseFunc(Mouse);
-	glutMotionFunc(Motion);
+	glfwSetKeyCallback(window, Keyboard);
+	//glutDisplayFunc(Display);
+	//glutReshapeFunc(Reshape);
+	//glutIdleFunc(Idle);
+	//glutTimerFunc(0, Timer, 0);
+	//glutKeyboardFunc(Keyboard);
+	//glutMouseFunc(Mouse);
+	//glutMotionFunc(Motion);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,38 +111,28 @@ void Initialize(int argc, char** argv) {
 void InitGL(int argc, char** argv) {
 
 	// Create GL environment
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-	WINDOW_HANDLE = glutCreateWindow(WINDOW_TITLE_PREFIX);
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-	// Window creation error handling
-	if (WINDOW_HANDLE < 1) {
-		fprintf(
-			stderr,
-			"ERROR: glutCreateWindow failed.\n"
-			);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
+							  WINDOW_TITLE_PREFIX,
+							  nullptr, nullptr);
+	if (window == nullptr) {
+		fprintf(stderr, "ERROR: glfwCreateWindow failed.\n");
 		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
+	glfwMakeContextCurrent(window);
 
-	// GLEW initialization error handling
+	glewExperimental = GL_TRUE;
 	GLenum GLEW_INIT_RESULT;
 	GLEW_INIT_RESULT = glewInit();
 	if (GLEW_INIT_RESULT != GLEW_OK) {
-		fprintf(
-			stderr,
-			"ERROR: %s\n",
-			glewGetErrorString(GLEW_INIT_RESULT)
-			);
-		exit(EXIT_FAILURE);
-	}
-
-	if (!glewIsSupported("GL_VERSION_2_0 ""GL_ARB_pixel_buffer_object")) {
-		fprintf(
-			stderr,
-			"ERROR: Support for necessary OpenGL extensions missing."
-			);
+		fprintf(stderr, "GLEW initialization error: %s\n",
+				glewGetErrorString(GLEW_INIT_RESULT));
 		fflush(stderr);
 		exit(EXIT_FAILURE);
 	}
@@ -170,8 +164,7 @@ void Display() {
 	glEnableClientState(GL_COLOR_ARRAY);
 	glDrawArrays(GL_POINTS, 0, WINDOW_WIDTH*WINDOW_HEIGHT);
 	glDisableClientState(GL_VERTEX_ARRAY);
-	glutSwapBuffers();
-
+	
 	// NSIGHT profiling, exit after one iteration
 	//cudaDeviceSynchronize();
 	//exit(EXIT_SUCCESS);
@@ -209,21 +202,23 @@ void Timer(int value) {
 			WINDOW_HEIGHT,
 			renderer->passCounter);
 
-		glutSetWindowTitle(WINDOW_TITLE);
+		//glutSetWindowTitle(WINDOW_TITLE);
 		free(WINDOW_TITLE);
 	}
 
 	renderer->fpsCounter = 0;
-	glutPostRedisplay();
-	glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
+	//glutPostRedisplay();
+	//glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
 }
 
 void Idle(void) {
-	glutPostRedisplay();
+	//glutPostRedisplay();
 }
 
-void Keyboard(unsigned char Key, int, int) {
-
+void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mode) {
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		glfwSetWindowShouldClose(window, GL_TRUE);
+	}
 }
 
 void Mouse(int button, int state, int x, int y) {
