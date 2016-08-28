@@ -45,7 +45,7 @@ namespace HKernels {
 		glm::vec3 u = normalize(cross(normal, w));
 		glm::vec3 v = cross(normal, u);
 
-		return c * normal + (__cosf(t) * s * u) + (__sinf(t) * s * v);
+		return c * normal + (cosf(t) * s * u) + (sinf(t) * s * v);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -75,17 +75,11 @@ namespace HKernels {
 			int x = i % cameraData->resolution.x;
 			int y = cameraData->resolution.y - (i - x) / cameraData->resolution.x - 1;
 
-			// TODO: Maybe the camera axis computations should be handled CPU-side
-			// stored and updated only when the camera is moved
+			// Store camera coordinate system
 			glm::vec3 position = cameraData->position;
-			glm::vec3 forward = normalize(cameraData->forward); // Shouldn't need normalization
-
-			// Compute horizontal and vertical axes on camera image plane
-			glm::vec3 horizontalAxis = normalize(cross(forward, cameraData->up));
-			glm::vec3 verticalAxis = normalize(cross(horizontalAxis, forward));
-
-			// Compute middle point on camera image plane
-			glm::vec3 middle = position + forward;
+			glm::vec3 forward = cameraData->forward;
+			glm::vec3 right = cameraData->right;
+			glm::vec3 up = cameraData->up;
 
 			// Initialize random number generator
 			curandState RNGState;
@@ -97,9 +91,9 @@ namespace HKernels {
 			float OffsetY = curand_uniform(&RNGState) - 0.5f;
 
 			// Compute point on image plane and account for focal distance
-			glm::vec3 pointOnImagePlane = position + ((middle
-				+ (2.0f * (OffsetX + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * horizontalAxis * __tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
-				+ (2.0f * (OffsetY + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * verticalAxis * __tanf(cameraData->FOV.y * M_PI_2 * M_1_180)) - position)
+			glm::vec3 pointOnImagePlane = position + ((forward
+				+ (2.0f * (OffsetX + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * right * tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
+				+ (2.0f * (OffsetY + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * up * tanf(cameraData->FOV.y * M_PI_2 * M_1_180)))
 				* cameraData->focalDistance;
 
 			float apertureRadius = cameraData->apertureRadius;
@@ -108,7 +102,7 @@ namespace HKernels {
 				float angle = M_2PI * curand_uniform(&RNGState);
 				float distance = apertureRadius * sqrtf(curand_uniform(&RNGState));
 
-				position += (__cosf(angle) * horizontalAxis + __sinf(angle) * verticalAxis) * distance;
+				position += (cosf(angle) * right + sinf(angle) * up) * distance;
 			}
 
 			rays[i].origin = position;
@@ -176,10 +170,18 @@ namespace HKernels {
 				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * material.emission;
 				colorMask[pixelIdx] *= material.diffuse;
 
+				// TODO: Fix normal directions if bouncing from other side
 				// Compute new ray direction
 				// TODO: BSDF etc
 				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
 				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
+
+				// TEMP Backface checking and normal flipping:
+				// Instead of if-statement, just multiply normal by sign of dot(...), might help thread divergence
+				if (dot(-rays[pixelIdx].direction, intersection.normal) < 0.0f) {
+					intersection.normal *= -1.0f;
+				}
+
 				rays[pixelIdx].origin = intersection.position + 0.005f * intersection.normal;
 				rays[pixelIdx].direction = HemisphereCosSample(intersection.normal,
 															   curand_uniform(&RNGState),
@@ -188,7 +190,7 @@ namespace HKernels {
 			}
 			else {
 				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * glm::vec3(0.3f);
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * glm::vec3(0.69f,0.86f,0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 
@@ -334,10 +336,10 @@ namespace HKernels {
 		unsigned int gridSize = (width*height + blockSize - 1) / blockSize;
 
 		checkCudaErrors(cudaDeviceSynchronize());
-		SavePNG << <gridSize, blockSize >> >(colorBytes,
-											 pixels,
-											 width,
-											 height);
+		SavePNG<<<gridSize, blockSize>>>(colorBytes,
+										 pixels,
+										 width,
+										 height);
 		checkCudaErrors(cudaDeviceSynchronize());
 	}
 }

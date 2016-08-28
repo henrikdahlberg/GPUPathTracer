@@ -4,105 +4,13 @@
 #include <Shapes/Sphere.h>
 
 void HScene::LoadSceneFile() {
-	// Closed Cornell box
-	/*NumSpheres = 8;
-	Spheres = new HSphere[NumSpheres];
-
-	// Yellow sphere
-	Spheres[0].position = glm::vec3(-0.25f, 0.15f, -0.3f);
-	Spheres[0].radius = 0.15f;
-	Spheres[0].material.Diffuse = glm::vec3(0.87f, 0.87f, 0.15f);
-	Spheres[0].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Blue sphere
-	Spheres[1].position = glm::vec3(0.2f, 0.2f, -0.1f);
-	Spheres[1].radius = 0.2f;
-	Spheres[1].material.Diffuse = glm::vec3(0.87f, 0.15f, 0.87f);
-	Spheres[1].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Light sphere
-	Spheres[2].position = glm::vec3(0.0f, 0.75f, 0.0f);
-	Spheres[2].radius = 0.15f;
-	Spheres[2].material.Diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	Spheres[2].material.Emission = glm::vec3(3.0f, 3.0f, 3.4f);
-
-	// Floor sphere
-	Spheres[3].position = glm::vec3(0.0f, -1e5f, 0.0f);
-	Spheres[3].radius = 1e5f;
-	Spheres[3].material.Diffuse = glm::vec3(0.87f, 0.87f, 0.87f);
-	Spheres[3].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Right wall sphere
-	Spheres[4].position = glm::vec3(0.5f + 1e5f, 0.5f, 0.0f);
-	Spheres[4].radius = 1e5f;
-	Spheres[4].material.Diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
-	Spheres[4].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Left wall sphere
-	Spheres[5].position = glm::vec3(-0.5f - 1e5f, 0.5f, 0.0f);
-	Spheres[5].radius = 1e5f;
-	Spheres[5].material.Diffuse = glm::vec3(0.87f, 0.15f, 0.15f);
-	Spheres[5].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Back wall sphere
-	Spheres[6].position = glm::vec3(0.0f, 0.5f, -0.5f - 1e5f);
-	Spheres[6].radius = 1e5f;
-	Spheres[6].material.Diffuse = glm::vec3(0.87f, 0.87f, 0.87f);
-	Spheres[6].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Roof sphere
-	Spheres[7].position = glm::vec3(0.0f, 1.0f + 1e5f, 0.0f);
-	Spheres[7].radius = 1e5f;
-	Spheres[7].material.Diffuse = glm::vec3(0.87f, 0.87f, 0.87f);
-	Spheres[7].material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);*/
-
-	// Open sphere scene
-	/*NumSpheres = 6;
-	Spheres = new HSphere[NumSpheres];
-
-	// Yellow sphere
-	Spheres[0].Position = glm::vec3(0.1f, 0.8f, -2.0f);
-	Spheres[0].Radius = 0.8f;
-	Spheres[0].Material.diffuse = glm::vec3(0.60f, 0.40f, 0.87f);
-	Spheres[0].Material.Emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Blue sphere
-	Spheres[1].Position = glm::vec3(1.4f, 0.9f, -0.3f);
-	Spheres[1].Radius = 0.8f;
-	Spheres[1].Material.diffuse = glm::vec3(0.15f, 0.35f, 0.87f);
-	Spheres[1].Material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Light sphere
-	Spheres[2].Position = glm::vec3(0.0f, 3.0f, 0.0f);
-	Spheres[2].Radius = 0.8f;
-	Spheres[2].Material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	Spheres[2].Material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
-
-	// Floor sphere
-	Spheres[3].Position = glm::vec3(0.0f, -1e5f, 0.0f);
-	Spheres[3].Radius = 1e5f;
-	Spheres[3].Material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
-	Spheres[3].Material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Blue sphere
-	Spheres[4].Position = glm::vec3(-2.0f, 1.3f, -3.4f);
-	Spheres[4].Radius = 1.2f;
-	Spheres[4].Material.diffuse = glm::vec3(0.80f, 0.30f, 0.80f);
-	Spheres[4].Material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	// Blue sphere
-	Spheres[5].Position = glm::vec3(0.0f, 0.4f, -0.3f);
-	Spheres[5].Radius = 0.3f;
-	Spheres[5].Material.diffuse = glm::vec3(0.40f, 0.87f, 0.87f);
-	Spheres[5].Material.emission = glm::vec3(0.0f, 0.0f, 0.0f);*/
-
 	// Random colored sphere scene
 	numSpheres = 300;
 	spheres = new HSphere[numSpheres];
 
 	srand(time(nullptr));
 
-	for (int i = 0; i < numSpheres - 2; i++) {
+	for (int i = 0; i < numSpheres - 1; i++) {
 
 		spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
 										0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
@@ -122,15 +30,109 @@ void HScene::LoadSceneFile() {
 		}
 	}
 
-	spheres[numSpheres - 2].position = glm::vec3(0.0f, 3.0f, 0.0f);
-	spheres[numSpheres - 2].radius = 0.8f;
-	spheres[numSpheres - 2].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	spheres[numSpheres - 2].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
+	//spheres[numSpheres - 2].position = glm::vec3(0.0f, -1e5f, 0.0f);
+	//spheres[numSpheres - 2].radius = 1e5f;
+	//spheres[numSpheres - 2].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
+	//spheres[numSpheres - 2].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	spheres[numSpheres - 1].position = glm::vec3(0.0f, -1e5f, 0.0f);
-	spheres[numSpheres - 1].radius = 1e5f;
-	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
-	spheres[numSpheres - 1].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	spheres[numSpheres - 1].position = glm::vec3(0.0f, 3.0f, 0.0f);
+	spheres[numSpheres - 1].radius = 0.8f;
+	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
+	spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Cornell box
+	//////////////////////////////////////////////////////////////////////////
+	HMaterial white = HMaterial(glm::vec3(0.90f), glm::vec3(0.0f));
+	HMaterial red = HMaterial(glm::vec3(0.90f, 0.05f, 0.05f), glm::vec3(0.0f));
+	HMaterial green = HMaterial(glm::vec3(0.05f, 0.90f, 0.05f), glm::vec3(0.0f));
+	HMaterial light = HMaterial(glm::vec3(0.0f), glm::vec3(20.4f));
+
+	numTriangles = 20;
+	triangles = new HTriangle[numTriangles];
+	glm::vec3 A, B, C, D, E, F, G, H, I, J, K, L;
+
+	// Bottom vertices
+	A = glm::vec3(-552.8f, 0.0f, 0.0f);
+	B = glm::vec3(0.0f, 0.0f, 0.0f);
+	C = glm::vec3(0.0f, 0.0f, -559.2f);
+	D = glm::vec3(-549.6f, 0.0f, -559.2f);
+
+	// Top vertices
+	E = glm::vec3(-556.0f, 548.8f, 0.0f);
+	F = glm::vec3(-556.0f, 548.8f, -559.2f);
+	G = glm::vec3(0.0f, 548.8f, -559.2f);
+	H = glm::vec3(0.0f, 548.8f, 0.0f);
+
+	// Light/roof hole vertices
+	I = glm::vec3(-343.0f, 548.8f, -227.0f);
+	J = glm::vec3(-343.0f, 548.8f, -332.0f);
+	K = glm::vec3(-213.0f, 548.8f, -332.0f);
+	L = glm::vec3(-213.0f, 548.8f, -227.0f);
+
+	//------------------------------------------------------------------------
+	// Floor
+	//------------------------------------------------------------------------
+	triangles[0] = HTriangle(A, B, C, white);
+	triangles[1] = HTriangle(A, C, D, white);
+	//------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------
+	// Roof
+	//------------------------------------------------------------------------
+	triangles[2] = HTriangle(E, F, I, white);
+	triangles[3] = HTriangle(F, G, J, white);
+	triangles[4] = HTriangle(G, H, K, white);
+	triangles[5] = HTriangle(H, E, L, white);
+	triangles[6] = HTriangle(F, J, I, white);
+	triangles[7] = HTriangle(G, K, J, white);
+	triangles[8] = HTriangle(H, L, K, white);
+	triangles[9] = HTriangle(E, I, L, white);
+
+	// Light
+	triangles[10] = HTriangle(I, J, K, light);
+	triangles[11] = HTriangle(I, K, L, light);
+	//------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------
+	// Back wall
+	//------------------------------------------------------------------------
+	triangles[12] = HTriangle(D, C, G, white);
+	triangles[13] = HTriangle(D, G, F, white);
+	//------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------
+	// Right wall
+	//------------------------------------------------------------------------
+	triangles[14] = HTriangle(B, H, G, green);
+	triangles[15] = HTriangle(B, G, C, green);
+	//------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------
+	// Left wall
+	//------------------------------------------------------------------------
+	triangles[16] = HTriangle(A, D, F, red);
+	triangles[17] = HTriangle(A, F, E, red);
+	//------------------------------------------------------------------------
+
+	float scale = 1.0f / 559.2f;
+	glm::vec3 offset = glm::vec3(0.5f, 0.0f, 0.5f);
+	for (int i=0; i < 18; i++) {
+		triangles[i].v0 *= scale;
+		triangles[i].v1 *= scale;
+		triangles[i].v2 *= scale;
+		triangles[i].v0 += offset;
+		triangles[i].v1 += offset;
+		triangles[i].v2 += offset;
+	}
+	//------------------------------------------------------------------------
+
+	triangles[18] = HTriangle(glm::vec3(-2.5f, -0.1f, -2.5f),
+							  glm::vec3(2.5f, -0.1f, -2.5f),
+							  glm::vec3(2.5f, -0.1f, 2.5f), white);
+	triangles[19] = HTriangle(glm::vec3(-2.5f, -0.1f, -2.5f),
+							  glm::vec3(2.5f, -0.1f, 2.5f),
+							  glm::vec3(-2.5f, -0.1f, 2.5f), white);
 
 	// Temp meshloading
 	/*HTriangleMesh mesh;
@@ -144,14 +146,5 @@ void HScene::LoadSceneFile() {
 	triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
 	triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 	}*/
-	numTriangles = 1;
 
-	triangles = new HTriangle[numTriangles];
-	for (int i = 0; i < numTriangles; i++) {
-		triangles[i].v0 = glm::vec3(-0.5f, 0.2f, 0.3f);
-		triangles[i].v1 = glm::vec3(0.5f, 0.2f, 0.0f);
-		triangles[i].v2 = glm::vec3(0.0f, 0.5f, -0.3f);
-		triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
-		triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-	}
 }

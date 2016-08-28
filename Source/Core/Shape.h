@@ -8,6 +8,7 @@
 
 struct HShape
 {
+	__host__ __device__ HShape() {}
 
 	__host__ __device__ bool Intersect(HRay &ray, float &t,
 									   HSurfaceInteraction &intersection);

@@ -29,10 +29,14 @@ struct HTriangleMesh
 struct HTriangle : HShape
 {
 
-	HTriangle() {}
+	__host__ __device__ HTriangle() {}
 
-	HTriangle(glm::vec3 vert0, glm::vec3 vert1, glm::vec3 vert2)
+	__host__ __device__ HTriangle(glm::vec3 vert0, glm::vec3 vert1, glm::vec3 vert2)
 		: v0(vert0), v1(vert1), v2(vert2) {}
+
+	__host__ __device__ HTriangle(glm::vec3 vert0, glm::vec3 vert1, glm::vec3 vert2,
+			  HMaterial mat)
+			  : v0(vert0), v1(vert1), v2(vert2) { material = mat; }
 
 	__host__ __device__ bool Intersect(HRay &ray, float &t,
 									   HSurfaceInteraction &intersection)

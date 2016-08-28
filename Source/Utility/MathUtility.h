@@ -1,11 +1,10 @@
 #ifndef MATHUTILITY_H
 #define MATHUTILITY_H
 
+#include <Core/Include.h>
 #include <cuda.h>
 #include <math.h>
 #include <float.h>
-
-#include <Utility/External/cutil_math.h>
 
 #define M_EPSILON  0.00001f
 #define M_INF	   FLT_MAX

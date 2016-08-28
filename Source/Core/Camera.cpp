@@ -18,42 +18,60 @@ void HCamera::SetFOV(const float FOV) {
 	cameraData.FOV.y = RadToDeg(atan(tan(DegToRad(FOV)*0.5f)*((float)cameraData.resolution.y / (float)cameraData.resolution.x))*2.0f);
 }
 
-glm::mat3 HCamera::GetOrientation() const {
-	glm::mat3 m;
-	m[2] = -normalize(cameraData.forward);
-	m[0] = normalize(cross(cameraData.up, m[2]));
-	m[1] = normalize(cross(m[2], m[0]));
-	return m;
-}
-
-glm::mat4 HCamera::GetCameraToWorld() const {
-	glm::mat3 o = GetOrientation();
-	glm::mat4 m;
-	m[0] = glm::vec4(o[0], 0.0f);
-	m[1] = glm::vec4(o[1], 0.0f);
-	m[2] = glm::vec4(o[2], 0.0f);
-	m[3] = glm::vec4(cameraData.position, 1.0f);
-	return m;
-}
-
-glm::mat4 HCamera::GetWorldToCamera() const {
-	return glm::mat4();
-}
-
-void HCamera::SetCameraToWorld(const glm::mat4 m) {
-
-}
-
-void HCamera::SetWorldToCamera(const glm::mat4 m) {
-
-}
-
 void HCamera::InitDefaults() {
+	yaw = -90.0f;
+	pitch = 0.0f;
 	cameraData.position = glm::vec3(0.0f, 0.5f, 1.5f);
-	cameraData.forward = glm::vec3(0.0f, 0.0f, -1.0f);
-	cameraData.up = glm::vec3(0.0f, 1.0f, 0.0f);
-	cameraData.apertureRadius = 0.02f;
+	cameraData.worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	UpdateCameraVectors();
+	cameraData.apertureRadius = 0.005f;
 	cameraData.focalDistance = 1.5f;
 	cameraData.FOV.x = 75.0f;
+	velocity = 3.0f;
+	mouseSensitivity = 0.25f;
 }
 
+void HCamera::ProcessMovement(HCameraMovement direction, const float deltaTime) {
+	float distance = velocity*deltaTime;
+	switch (direction) {
+	case FORWARD:
+		cameraData.position += cameraData.forward * distance;	break;
+	case BACKWARD:
+		cameraData.position -= cameraData.forward * distance;	break;
+	case LEFT:
+		cameraData.position -= cameraData.right * distance;		break;
+	case RIGHT:
+		cameraData.position += cameraData.right * distance;		break;
+	case UP:
+		cameraData.position += cameraData.worldUp * distance;	break;
+	case DOWN:
+		cameraData.position -= cameraData.worldUp * distance;	break;
+	}
+}
+
+void HCamera::ProcessMouseMovement(float xoffset, float yoffset) {
+
+	yaw = fmod(yaw + xoffset*mouseSensitivity, 360.0f);
+	pitch -= yoffset*mouseSensitivity;
+
+	if (pitch > 89.0f) { pitch = 89.0f; }
+	if (pitch < -89.0f) { pitch = -89.0f; }
+
+	UpdateCameraVectors();
+}
+
+void HCamera::ProcessMouseScroll(float yoffset) {
+	velocity = fmax(velocity + yoffset,0.0f);
+}
+
+void HCamera::UpdateCameraVectors() {
+	glm::vec3 newForward;
+	newForward.x = cos(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+	newForward.y = sin(glm::radians(this->pitch));
+	newForward.z = sin(glm::radians(this->yaw)) * cos(glm::radians(this->pitch));
+
+	cameraData.forward = normalize(newForward);
+	cameraData.right = normalize(cross(cameraData.forward, cameraData.worldUp));
+	cameraData.up = normalize(cross(cameraData.right, cameraData.forward));
+}
