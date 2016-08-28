@@ -13,36 +13,18 @@ public:
 	HRenderer(HCamera* camera);
 	virtual ~HRenderer();
 
-	/**
-	 * TODO: Doc
-	 */
 	HImage* Render();
 
 	void InitScene(HScene* scene);
-	void Update(HCamera* camera);
+	void Reset(HCamera* camera);
 	void Resize(HCameraData* cameraData);
 
 	unsigned int passCounter;
-	unsigned int fpsCounter;
 
 private:
 	bool bFirstRenderPass;
 
-	/**
-	 * Initializes OpenGL Vertex Buffer Object and registers it for access by CUDA.
-	 *
-	 * @param VBO
-	 * @param VBOResource
-	 * @param VBOFlags
-	 */
 	void CreateVBO(GLuint* Buffer, cudaGraphicsResource** BufferResource, unsigned int BufferFlags);
-
-	/**
-	 * TODO: Doc
-	 *
-	 * @param VBO
-	 * @param VBOResource
-	 */
 	void DeleteVBO(GLuint* buffer, cudaGraphicsResource* bufferResource);
 
 	void InitGPUData(HCameraData* cameraData);

@@ -2,7 +2,6 @@
 
 HRenderer::HRenderer(HCamera* camera) {
 	passCounter = 0;
-	fpsCounter = 0;
 	bFirstRenderPass = true;
 	image = new HImage(camera->GetCameraData()->resolution);
 	InitGPUData(camera->GetCameraData());
@@ -39,10 +38,6 @@ HImage* HRenderer::Render() {
 								 triangles,
 								 numTriangles);
 
-	if (passCounter == 10000) {
-		image->SavePNG("Images/Bunny");
-	}
-
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &bufferResource, 0));
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
 
@@ -60,7 +55,7 @@ void HRenderer::InitScene(HScene* scene) {
 	checkCudaErrors(cudaMemcpy(triangles, scene->triangles, numTriangles*sizeof(HTriangle), cudaMemcpyHostToDevice));
 }
 
-void HRenderer::Update(HCamera* camera) {
+void HRenderer::Reset(HCamera* camera) {
 
 	FreeGPUData();
 

@@ -6,12 +6,17 @@
 #include <Core/Image.h>
 
 //////////////////////////////////////////////////////////////////////////
-// Constants
+// Global variables
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
-#define FPS_DISPLAY_REFRESH_RATE 200 //ms
 unsigned int WINDOW_WIDTH = 1280;
 unsigned int WINDOW_HEIGHT = 720;
+double lastTime = 0.0;
+double deltaTime;
+bool input[1024]; //TODO: Some input controller class
+bool bReset = false;
+bool bRotateCamera = false;
+glm::uvec2 lastMousePos = glm::uvec2(0, 0);
 
 //////////////////////////////////////////////////////////////////////////
 // Pointers
@@ -28,19 +33,19 @@ GLFWwindow* window = nullptr;
 void InitCamera();
 void InitGL(int argc, char** argv);
 void Initialize(int argc, char** argv);
+void SetWindowTitle(GLFWwindow* window, double deltaTime);
+void Update();
+void ProcessMovement(double deltaTime);
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL callback declarations
 //////////////////////////////////////////////////////////////////////////
 void Display();
-void Reshape(int, int);
-void Timer(int);
-void Idle(void);
+void Resize(GLFWwindow* window, int width, int height);
 void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mode);
-void SpecialKeys(int Key, int, int);
-void Mouse(int Button, int State, int x, int y);
-void Motion(int x, int y);
-void Cleanup();
+void Mouse(GLFWwindow* window, int button, int action, int mods);
+void Motion(GLFWwindow* window, double xpos, double ypos);
+void Scroll(GLFWwindow* window, double xoffset, double yoffset);
 
 //////////////////////////////////////////////////////////////////////////
 // Main loop
@@ -53,7 +58,7 @@ int main(int argc, char** argv) {
 	// Rendering main loop
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
-		Display();
+		Update();
 		glfwSwapBuffers(window);
 	}
 
@@ -95,13 +100,11 @@ void Initialize(int argc, char** argv) {
 	renderer->InitScene(scene);
 
 	// OpenGL callback registration
+	glfwSetWindowSizeCallback(window, Resize);
 	glfwSetKeyCallback(window, Keyboard);
-	//glutDisplayFunc(Display);
-	//glutReshapeFunc(Reshape);
-	//glutIdleFunc(Idle);
-	//glutTimerFunc(0, Timer, 0);
-	//glutKeyboardFunc(Keyboard);
-	//glutMouseFunc(Mouse);
+	glfwSetMouseButtonCallback(window, Mouse);
+	glfwSetCursorPosCallback(window, Motion);
+	glfwSetScrollCallback(window, Scroll);
 	//glutMotionFunc(Motion);
 }
 
@@ -112,9 +115,9 @@ void InitGL(int argc, char** argv) {
 
 	// Create GL environment
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -150,8 +153,6 @@ void InitGL(int argc, char** argv) {
 //////////////////////////////////////////////////////////////////////////
 void Display() {
 
-	renderer->fpsCounter++;
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	image = renderer->Render();
@@ -170,7 +171,7 @@ void Display() {
 	//exit(EXIT_SUCCESS);
 }
 
-void Reshape(int width, int height) {
+void Resize(GLFWwindow* window, int width, int height) {
 
 	WINDOW_WIDTH = width;
 	WINDOW_HEIGHT = height;
@@ -186,50 +187,108 @@ void Reshape(int width, int height) {
 	renderer->Resize(camera->GetCameraData());
 }
 
-void Timer(int value) {
-
-	// TODO: Validate that this is working as intended
-	//		 weird frame rates shown when rendering is slow
-	if (value != 0) {
-		char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
-
-		sprintf(
-			WINDOW_TITLE,
-			"%s: %d FPS @ %d x %d, Iterations: %d",
+void SetWindowTitle(GLFWwindow* window, double deltaTime) {
+	char* WINDOW_TITLE = (char*)malloc(512 + strlen(WINDOW_TITLE_PREFIX));
+	sprintf(WINDOW_TITLE,
+			"%s: %.0f FPS @ %d x %d, Iterations: %d, Rendering time: %.0f ms",
 			WINDOW_TITLE_PREFIX,
-			renderer->fpsCounter * 1000 / FPS_DISPLAY_REFRESH_RATE,
+			1.0f / deltaTime,
 			WINDOW_WIDTH,
 			WINDOW_HEIGHT,
-			renderer->passCounter);
+			renderer->passCounter,
+			deltaTime * 1000.0f);
 
-		//glutSetWindowTitle(WINDOW_TITLE);
-		free(WINDOW_TITLE);
-	}
-
-	renderer->fpsCounter = 0;
-	//glutPostRedisplay();
-	//glutTimerFunc(FPS_DISPLAY_REFRESH_RATE, Timer, 1);
-}
-
-void Idle(void) {
-	//glutPostRedisplay();
+	glfwSetWindowTitle(window, WINDOW_TITLE);
 }
 
 void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mode) {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
+	if (key == GLFW_KEY_PRINT_SCREEN && action == GLFW_PRESS) {
+		image->SavePNG("Images/Screenshot");
+	}
+	if (key >= 0 && key < 1024) {
+		switch (action) {
+		case GLFW_PRESS:
+			input[key] = true;	break;
+		case GLFW_RELEASE:
+			input[key] = false;
+			bReset = false;		break;
+		default:
+			break;
+		}
+	}
 }
 
-void Mouse(int button, int state, int x, int y) {
-	// TEMP, randomizes scene
-	scene->LoadSceneFile();
-	renderer->Update(camera);
-	renderer->InitScene(scene);
-
-	Motion(x, y);
+void Mouse(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+		bRotateCamera = true;
+	}
+	if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+		bRotateCamera = false;
+	}
 }
 
-void Motion(int x, int y) {
+void Motion(GLFWwindow* window, double xpos, double ypos) {
+	float xoffset = xpos - lastMousePos.x;
+	float yoffset = ypos - lastMousePos.y;
 
+	lastMousePos.x = xpos;
+	lastMousePos.y = ypos;
+
+	if (bRotateCamera) {
+		camera->ProcessMouseMovement(xoffset, yoffset);
+		bReset = true;
+	}
+}
+
+void Scroll(GLFWwindow* window, double xoffset, double yoffset) {
+	camera->ProcessMouseScroll(yoffset);
+}
+
+void ProcessMovement(double deltaTime) {
+
+	if (input[GLFW_KEY_W]) {
+		camera->ProcessMovement(FORWARD, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_A]) {
+		camera->ProcessMovement(LEFT, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_S]) {
+		camera->ProcessMovement(BACKWARD, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_D]) {
+		camera->ProcessMovement(RIGHT, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_SPACE]) {
+		camera->ProcessMovement(UP, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_LEFT_CONTROL]) {
+		camera->ProcessMovement(DOWN, deltaTime);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_R]) {
+		scene->LoadSceneFile();
+		renderer->InitScene(scene);
+		bReset = true;
+	}
+}
+
+void Update() {
+	double currentTime = glfwGetTime();
+	deltaTime = currentTime - lastTime;
+	SetWindowTitle(window, deltaTime);
+	ProcessMovement(deltaTime);
+	if (bReset) {
+		renderer->Reset(camera);
+		bReset = false;
+	}
+	Display();
+	lastTime = currentTime;
 }

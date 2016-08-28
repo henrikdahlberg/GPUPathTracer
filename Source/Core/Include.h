@@ -24,11 +24,13 @@
 #include <helper_functions.h>
 #include <helper_cuda.h>
 #include <helper_cuda_gl.h>
+#include <helper_math.h>
 #include <math.h>
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <vector>
 #include <string>
