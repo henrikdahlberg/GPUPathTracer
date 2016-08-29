@@ -6,18 +6,15 @@
 #include <Core/Geometry.h>
 #include <Core/Interaction.h>
 
-struct HSphere : HShape
-{
+struct HSphere : HShape {
 
 	__host__ __device__ bool Intersect(HRay &ray, float &t,
-									   HSurfaceInteraction &intersection)
-	{
+									   HSurfaceInteraction &intersection) {
 		glm::vec3 op = position - ray.origin;
 		float b = dot(op, ray.direction);
 		float discriminant = b*b - dot(op, op) + radius*radius;
 
-		if (discriminant < 0)
-		{
+		if (discriminant < 0.0f) {
 			return false;
 		}
 
@@ -26,20 +23,18 @@ struct HSphere : HShape
 		float t1 = b - discriminant;
 		float t2 = b + discriminant;
 
-		if (t1 > M_EPSILON && t1 < t)
-		{
+		if (t1 > M_EPSILON && t1 < t) {
 			t = t1;
 		}
-		else if (t2 > M_EPSILON && t2 < t)
-		{
+		else if (t2 > M_EPSILON && t2 < t) {
 			t = t2;
 		}
-		else
-		{
+		else {
 			return false;
 		}
 
-		intersection.position = ray.origin + t*ray.direction;
+		//intersection.position = ray.origin + t*ray.direction;
+		intersection.position = ray(t);
 		intersection.normal = normalize(intersection.position - position);
 
 		return true;

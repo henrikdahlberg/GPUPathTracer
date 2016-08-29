@@ -9,8 +9,8 @@
 // Global variables
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
-unsigned int WINDOW_WIDTH = 1280;
-unsigned int WINDOW_HEIGHT = 720;
+unsigned int WINDOW_WIDTH = 1024;
+unsigned int WINDOW_HEIGHT = 1024;
 double lastTime = 0.0;
 double deltaTime;
 bool input[1024]; //TODO: Some input controller class
@@ -35,12 +35,12 @@ void InitGL(int argc, char** argv);
 void Initialize(int argc, char** argv);
 void SetWindowTitle(GLFWwindow* window, double deltaTime);
 void Update();
+void Display();
 void ProcessMovement(double deltaTime);
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL callback declarations
 //////////////////////////////////////////////////////////////////////////
-void Display();
 void Resize(GLFWwindow* window, int width, int height);
 void Keyboard(GLFWwindow* window, int key, int scancode, int action, int mode);
 void Mouse(GLFWwindow* window, int button, int action, int mods);
@@ -105,7 +105,6 @@ void Initialize(int argc, char** argv) {
 	glfwSetMouseButtonCallback(window, Mouse);
 	glfwSetCursorPosCallback(window, Motion);
 	glfwSetScrollCallback(window, Scroll);
-	//glutMotionFunc(Motion);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -114,6 +113,7 @@ void Initialize(int argc, char** argv) {
 void InitGL(int argc, char** argv) {
 
 	// Create GL environment
+	// TODO: Convert project to modern OpenGL
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);

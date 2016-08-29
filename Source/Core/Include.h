@@ -19,8 +19,6 @@
 #include <cuda_gl_interop.h>
 #include <device_functions.h>
 #include <device_launch_parameters.h>
-#include <curand.h>
-#include <curand_kernel.h>
 #include <helper_functions.h>
 #include <helper_cuda.h>
 #include <helper_cuda_gl.h>
@@ -34,6 +32,7 @@
 #include <time.h>
 #include <vector>
 #include <string>
+#include <windows.h>
 #include <thrust/random.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/functional.h>
