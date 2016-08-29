@@ -5,50 +5,63 @@
 
 void HScene::LoadSceneFile() {
 	// Random colored sphere scene
-	numSpheres = 300;
-	spheres = new HSphere[numSpheres];
+	//numSpheres = 300;
+	//spheres = new HSphere[numSpheres];
 
-	srand(time(nullptr));
+	//srand(time(nullptr));
 
-	for (int i = 0; i < numSpheres - 1; i++) {
+	//for (int i = 0; i < numSpheres - 1; i++) {
 
-		spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
-										0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
-										-4.0f*(float)rand() / (float)RAND_MAX);
-		spheres[i].radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
-		spheres[i].material.diffuse = glm::vec3((float)rand() / (float)RAND_MAX,
-												(float)rand() / (float)RAND_MAX,
-												(float)rand() / (float)RAND_MAX);
+	//	spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
+	//									0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
+	//									-4.0f*(float)rand() / (float)RAND_MAX);
+	//	spheres[i].radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
+	//	spheres[i].material.diffuse = glm::vec3((float)rand() / (float)RAND_MAX,
+	//											(float)rand() / (float)RAND_MAX,
+	//											(float)rand() / (float)RAND_MAX);
 
-		if ((float)rand() / (float)RAND_MAX > 0.8f) {
-			spheres[i].material.emission = glm::vec3(5.0f * (float)rand() / (float)RAND_MAX,
-													 5.0f * (float)rand() / (float)RAND_MAX,
-													 5.4f * (float)rand() / (float)RAND_MAX);
-		}
-		else {
-			spheres[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-		}
-	}
+	//	if ((float)rand() / (float)RAND_MAX > 0.8f) {
+	//		spheres[i].material.emission = glm::vec3(5.0f * (float)rand() / (float)RAND_MAX,
+	//												 5.0f * (float)rand() / (float)RAND_MAX,
+	//												 5.4f * (float)rand() / (float)RAND_MAX);
+	//	}
+	//	else {
+	//		spheres[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	}
+	//}
 
-	//spheres[numSpheres - 2].position = glm::vec3(0.0f, -1e5f, 0.0f);
-	//spheres[numSpheres - 2].radius = 1e5f;
-	//spheres[numSpheres - 2].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
-	//spheres[numSpheres - 2].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	////spheres[numSpheres - 2].position = glm::vec3(0.0f, -1e5f, 0.0f);
+	////spheres[numSpheres - 2].radius = 1e5f;
+	////spheres[numSpheres - 2].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
+	////spheres[numSpheres - 2].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	spheres[numSpheres - 1].position = glm::vec3(0.0f, 3.0f, 0.0f);
-	spheres[numSpheres - 1].radius = 0.8f;
-	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
+	//spheres[numSpheres - 1].position = glm::vec3(0.0f, 3.0f, 0.0f);
+	//spheres[numSpheres - 1].radius = 0.8f;
+	//spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
+	//spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
+
+	/*HMaterial floorMaterial = HMaterial(glm::vec3(0.4f), glm::vec3(0.0f));
+	numTriangles = 2;
+	triangles = new HTriangle[numTriangles];
+	triangles[0] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+	glm::vec3(25.0f, -0.1f, -25.0f),
+	glm::vec3(25.0f, -0.1f, 25.0f),
+	floorMaterial);
+	triangles[1] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+	glm::vec3(25.0f, -0.1f, 25.0f),
+	glm::vec3(-25.0f, -0.1f, 25.0f),
+	floorMaterial);*/
 
 	//////////////////////////////////////////////////////////////////////////
 	// Cornell box
 	//////////////////////////////////////////////////////////////////////////
-	HMaterial white = HMaterial(glm::vec3(0.90f), glm::vec3(0.0f));
-	HMaterial red = HMaterial(glm::vec3(0.90f, 0.05f, 0.05f), glm::vec3(0.0f));
-	HMaterial green = HMaterial(glm::vec3(0.05f, 0.90f, 0.05f), glm::vec3(0.0f));
-	HMaterial light = HMaterial(glm::vec3(0.0f), glm::vec3(20.4f));
+	HMaterial white = HMaterial(glm::vec3(0.95f), glm::vec3(0.0f));
+	HMaterial red = HMaterial(glm::vec3(0.7f, 0.01f, 0.01f), glm::vec3(0.0f));
+	HMaterial green = HMaterial(glm::vec3(0.01f, 0.3f, 0.01f), glm::vec3(0.0f));
+	HMaterial light = HMaterial(glm::vec3(0.0f), 20.0f * glm::vec3(0.736507f, 0.642866f, 0.210431f));
 
-	numTriangles = 20;
+	numTriangles = 40;
+
 	triangles = new HTriangle[numTriangles];
 	glm::vec3 A, B, C, D, E, F, G, H, I, J, K, L;
 
@@ -115,9 +128,64 @@ void HScene::LoadSceneFile() {
 	triangles[17] = HTriangle(A, F, E, red);
 	//------------------------------------------------------------------------
 
+	//------------------------------------------------------------------------
+	// Short block
+	//------------------------------------------------------------------------
+	glm::vec3 sA, sB, sC, sD, sE, sF, sG, sH;
+
+	sA = glm::vec3(-290.0f, 0.0f, -114.0f);
+	sB = glm::vec3(-240.0f, 0.0f, -272.0f);
+	sC = glm::vec3(-82.0f, 0.0f, -225.0f);
+	sD = glm::vec3(-130.0f, 0.0f, -65.0f);
+	sE = glm::vec3(-290.0f, 165.0f, -114.0f);
+	sF = glm::vec3(-240.0f, 165.0f, -272.0f);
+	sG = glm::vec3(-82.0f, 165.0f, -225.0f);
+	sH = glm::vec3(-130.0f, 165.0f, -65.0f);
+
+	triangles[18] = HTriangle(sA, sE, sF, white);
+	triangles[19] = HTriangle(sA, sF, sB, white);
+	triangles[20] = HTriangle(sB, sF, sG, white);
+	triangles[21] = HTriangle(sB, sG, sC, white);
+	triangles[22] = HTriangle(sC, sG, sH, white);
+	triangles[23] = HTriangle(sC, sH, sD, white);
+	triangles[24] = HTriangle(sD, sH, sE, white);
+	triangles[25] = HTriangle(sD, sE, sA, white);
+	triangles[26] = HTriangle(sA, sE, sF, white);
+	triangles[27] = HTriangle(sA, sF, sB, white);
+	triangles[28] = HTriangle(sE, sF, sG, white);
+	triangles[29] = HTriangle(sE, sG, sH, white);
+	//------------------------------------------------------------------------
+
+	//------------------------------------------------------------------------
+	// Tall block
+	//------------------------------------------------------------------------
+	glm::vec3 tA, tB, tC, tD, tE, tF, tG, tH;
+
+	tA = glm::vec3(-423.0f, 0.0f, -247.0f);
+	tB = glm::vec3(-472.0f, 0.0f, -406.0f);
+	tC = glm::vec3(-314.0f, 0.0f, -456.0f);
+	tD = glm::vec3(-265.0f, 0.0f, -296.0f);
+	tE = glm::vec3(-423.0f, 330.0f, -247.0f);
+	tF = glm::vec3(-472.0f, 330.0f, -406.0f);
+	tG = glm::vec3(-314.0f, 330.0f, -456.0f);
+	tH = glm::vec3(-265.0f, 330.0f, -296.0f);
+
+	triangles[30] = HTriangle(tA, tE, tF, white);
+	triangles[31] = HTriangle(tA, tF, tB, white);
+	triangles[32] = HTriangle(tB, tF, tG, white);
+	triangles[33] = HTriangle(tB, tG, tC, white);
+	triangles[34] = HTriangle(tC, tG, tH, white);
+	triangles[35] = HTriangle(tC, tH, tD, white);
+	triangles[36] = HTriangle(tD, tH, tE, white);
+	triangles[37] = HTriangle(tD, tE, tA, white);
+	triangles[38] = HTriangle(tE, tF, tG, white);
+	triangles[39] = HTriangle(tE, tG, tH, white);
+	//------------------------------------------------------------------------
+
+	// Scale measured data down to unit box
 	float scale = 1.0f / 559.2f;
 	glm::vec3 offset = glm::vec3(0.5f, 0.0f, 0.5f);
-	for (int i=0; i < 18; i++) {
+	for (int i=0; i < numTriangles; i++) {
 		triangles[i].v0 *= scale;
 		triangles[i].v1 *= scale;
 		triangles[i].v2 *= scale;
@@ -125,26 +193,25 @@ void HScene::LoadSceneFile() {
 		triangles[i].v1 += offset;
 		triangles[i].v2 += offset;
 	}
+
+	numSpheres = 1;
+	spheres = new HSphere[numSpheres];
+
+	spheres[0].radius = 0.18f;
+	spheres[0].position = glm::vec3(0.25f, 0.18f + 0.2951f, 0.15f);
+	spheres[0].material = white;
 	//------------------------------------------------------------------------
 
-	triangles[18] = HTriangle(glm::vec3(-2.5f, -0.1f, -2.5f),
-							  glm::vec3(2.5f, -0.1f, -2.5f),
-							  glm::vec3(2.5f, -0.1f, 2.5f), white);
-	triangles[19] = HTriangle(glm::vec3(-2.5f, -0.1f, -2.5f),
-							  glm::vec3(2.5f, -0.1f, 2.5f),
-							  glm::vec3(-2.5f, -0.1f, 2.5f), white);
-
 	// Temp meshloading
-	/*HTriangleMesh mesh;
-	fileLoader.LoadOBJ("bunny.obj", mesh);
+	//HTriangleMesh mesh;
+	//fileLoader.LoadOBJ("bunny.obj", mesh);
 
-	numTriangles = mesh.triangles.size();
-	triangles = new HTriangle[numTriangles];
-	for (int i = 0; i < numTriangles; i++)
-	{
-	triangles[i] = mesh.triangles[i];
-	triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.15f);
-	triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-	}*/
+	//numTriangles = mesh.triangles.size();
+	//triangles = new HTriangle[numTriangles];
+	//for (int i = 0; i < numTriangles; i++) {
+	//	triangles[i] = mesh.triangles[i];
+	//	triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.87f);
+	//	triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	//}
 
 }

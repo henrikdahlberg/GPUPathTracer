@@ -11,7 +11,7 @@
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
-#define MAX_RAY_DEPTH 7 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
 #define STREAM_COMPACTION	
 
 using namespace HMathUtility;
@@ -38,14 +38,14 @@ namespace HKernels {
 											 const float r1,
 											 const float r2) {
 		float c = sqrtf(r1);
-		float s = sqrtf(1.0f - c*c);
-		float t = r2 * M_2PI;
+		float phi = r2 * M_2PI;
 
 		glm::vec3 w = fabs(normal.x) < M_SQRT1_3 ? glm::vec3(1, 0, 0) : (fabs(normal.y) < M_SQRT1_3 ? glm::vec3(0, 1, 0) : glm::vec3(0, 0, 1));
 		glm::vec3 u = normalize(cross(normal, w));
 		glm::vec3 v = cross(normal, u);
 
-		return c * normal + (cosf(t) * s * u) + (sinf(t) * s * v);
+		return sqrtf(1.0f - r1) * normal + (cosf(phi) * c * u) + (sinf(phi) * c * v);
+
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -67,7 +67,7 @@ namespace HKernels {
 
 	__global__ void InitCameraRays(HRay* rays,
 								   HCameraData* cameraData,
-								   unsigned int passCounter) {
+								   unsigned int currentSeed) {
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
 
 		if (i < cameraData->resolution.x*cameraData->resolution.y) {
@@ -82,25 +82,25 @@ namespace HKernels {
 			glm::vec3 up = cameraData->up;
 
 			// Initialize random number generator
-			curandState RNGState;
-			curand_init(TWHash(passCounter) + TWHash(i), 0, 0, &RNGState);
+			thrust::default_random_engine rng(currentSeed + TWHash(i));
+			thrust::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
 			// Generate random pixel offsets for anti-aliasing
 			// Expected value is 0.5 i.e. middle of pixel
-			float OffsetX = curand_uniform(&RNGState) - 0.5f;
-			float OffsetY = curand_uniform(&RNGState) - 0.5f;
+			float dx = uniform(rng) - 0.5f;
+			float dy = uniform(rng) - 0.5f;
 
 			// Compute point on image plane and account for focal distance
 			glm::vec3 pointOnImagePlane = position + ((forward
-				+ (2.0f * (OffsetX + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * right * tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
-				+ (2.0f * (OffsetY + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * up * tanf(cameraData->FOV.y * M_PI_2 * M_1_180)))
+				+ (2.0f * (dx + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * right * tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
+				+ (2.0f * (dy + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * up * tanf(cameraData->FOV.y * M_PI_2 * M_1_180)))
 				* cameraData->focalDistance;
 
 			float apertureRadius = cameraData->apertureRadius;
 			if (apertureRadius > M_EPSILON) {
 				// Sample a point on the aperture
-				float angle = M_2PI * curand_uniform(&RNGState);
-				float distance = apertureRadius * sqrtf(curand_uniform(&RNGState));
+				float angle = M_2PI * uniform(rng);
+				float distance = apertureRadius * sqrtf(uniform(rng));
 
 				position += (cosf(angle) * right + sinf(angle) * up) * distance;
 			}
@@ -114,12 +114,12 @@ namespace HKernels {
 								glm::vec3* colorMask,
 								int numLivePixels,
 								int* livePixels,
-								unsigned int passCounter,
 								HRay* rays,
 								HSphere* spheres,
 								int numSpheres,
 								HTriangle* triangles,
-								int numTriangles) {
+								int numTriangles,
+								int currentSeed) {
 
 		int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -132,8 +132,8 @@ namespace HKernels {
 			int pixelIdx = livePixels[i];
 
 			// Initialize random number generator
-			curandState RNGState;
-			curand_init(TWHash(passCounter) + i, 0, 0, &RNGState);
+			thrust::default_random_engine rng(TWHash(pixelIdx) * currentSeed);
+			thrust::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
 			// Sphere intersection
 			float t = M_INF;
@@ -171,7 +171,6 @@ namespace HKernels {
 				colorMask[pixelIdx] *= material.diffuse;
 
 				// TODO: Fix normal directions if bouncing from other side
-				// Compute new ray direction
 				// TODO: BSDF etc
 				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
 				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
@@ -179,18 +178,19 @@ namespace HKernels {
 				// TEMP Backface checking and normal flipping:
 				// Instead of if-statement, just multiply normal by sign of dot(...), might help thread divergence
 				if (dot(-rays[pixelIdx].direction, intersection.normal) < 0.0f) {
-					intersection.normal *= -1.0f;
+					intersection.normal = -1.0f * intersection.normal;
 				}
 
+				// Compute new ray direction and origin
 				rays[pixelIdx].origin = intersection.position + 0.005f * intersection.normal;
 				rays[pixelIdx].direction = HemisphereCosSample(intersection.normal,
-															   curand_uniform(&RNGState),
-															   curand_uniform(&RNGState));
+															   uniform(rng),
+															   uniform(rng));
 
 			}
 			else {
 				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * glm::vec3(0.69f,0.86f,0.89f);
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.0f * glm::vec3(0.69f, 0.86f, 0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 
@@ -272,10 +272,17 @@ namespace HKernels {
 										  colorMask,
 										  accumulatedColor);
 
+		// Generate new seed each millisecond from system time and ray depth
+		SYSTEMTIME time;
+		GetSystemTime(&time);
+		long time_ms = (time.wSecond * 1000) + time.wMilliseconds;
+		int hashedPassCounter = TWHash(passCounter);
+		int currentSeed = hashedPassCounter + TWHash(time_ms);
+
 		// Generate initial rays from camera
 		InitCameraRays<<<gridSize, blockSize>>>(rays,
 												cameraData,
-												passCounter);
+												currentSeed);
 
 		// Trace surviving rays until none left or maximum depth reached
 		unsigned int newGridSize;
@@ -284,16 +291,21 @@ namespace HKernels {
 			// Compute new grid size accounting for number of live pixels
 			newGridSize = (numLivePixels + blockSize - 1) / blockSize;
 
+			// Generate new seed each millisecond from system time and ray depth
+			GetSystemTime(&time);
+			long time_ms = (time.wSecond * 1000) + time.wMilliseconds;
+			currentSeed = hashedPassCounter + TWHash(time_ms) + rayDepth;
+
 			TraceKernel<<<newGridSize, blockSize>>>(accumulatedColor,
 													colorMask,
 													numLivePixels,
 													livePixels,
-													passCounter,
 													rays,
 													spheres,
 													numSpheres,
 													triangles,
-													numTriangles);
+													numTriangles,
+													currentSeed);
 
 			// TODO: Multi kernel ray propagation idea (less divergence per kernel):
 			//			for each depth
