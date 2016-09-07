@@ -90,7 +90,7 @@ namespace HKernels {
 										 const glm::vec3 &transmissionDir) {
 		HFresnel fresnel;
 
-		// TEMP TIR detection
+		// TEMP TIR detection, not needed?
 		if (transmissionDir.length() < 0.12345f || dot(normal, transmissionDir) > 0.0f) {
 			fresnel.reflection = 1.0f;
 			fresnel.transmission = 0.0f;
@@ -107,7 +107,6 @@ namespace HKernels {
 		
 		// Equal mix of polarized and unpolarized
 		fresnel.reflection = 0.5f*(powf((s1-s2)/(s1+s2), 2.0f) + powf((p1-p2)/(p1+p2), 2.0f));
-		//fresnel.reflection = cosTheta2; //temp test
 		fresnel.transmission = 1.0f - fresnel.reflection;
 		return fresnel;
 
@@ -175,7 +174,7 @@ namespace HKernels {
 			ray.direction = normalize(pointOnImagePlane - position);
 			ray.enteredMedium = HMedium();
 			ray.currentMedium = HMedium();
-
+			ray.transmitted = false;
 			rays[i] = ray;
 		}
 	}
@@ -253,38 +252,51 @@ namespace HKernels {
 
 				// TODO: After an intersection is found, do the scattering in a separate kernel instead
 				// TODO: ray keeps check of which medium it is propagating through?
-				HMedium incidentMedium = currentRay.medium;
-				HMedium transmittedMedium = material.medium;
+
+				HMedium incidentMedium = currentRay.currentMedium;
+				HMedium transmittedMedium;
+				if (currentRay.transmitted) {
+					// Ray is coming from inside of the object it has entered
+					transmittedMedium = currentRay.enteredMedium;
+				}
+				else {
+					// Ray is approaching an object
+					transmittedMedium = material.medium;
+				}
 
 				glm::vec3 reflectionDir = ReflectionDir(intersection.normal, incidentDir);
 				glm::vec3 transmissionDir = TransmissionDir(intersection.normal, incidentDir,
 															incidentMedium.eta,
 															transmittedMedium.eta);
 
-				bool doSpecular = (material.materialType & SPECULAR); // TEMP
-				bool doReflect = doSpecular &&
+				bool doReflect = (material.materialType & SPECULAR) &&
 					(uniform(rng) < fresnelEquations(intersection.normal,
 													 incidentDir,
 													 incidentMedium.eta,
 													 transmittedMedium.eta,
 													 reflectionDir,
 													 transmissionDir).reflection);
-				if (doReflect) {
+				if (doReflect || material.materialType & REFLECTION) { // reflection
 					colorMask[pixelIdx] *= material.specular;
 
-					currentRay.origin = intersection.position + 0.005f * intersection.normal;
+					currentRay.origin = intersection.position + 0.001f * intersection.normal;
 					currentRay.direction = reflectionDir;
 					rays[pixelIdx] = currentRay;
 				}
-				else if (false /*transmission*/) {
-
+				else if (material.materialType & TRANSMISSION) { // transmission
+					currentRay.origin = intersection.position - 0.001f * intersection.normal;
+					currentRay.direction = transmissionDir;
+					currentRay.enteredMedium = currentRay.currentMedium;
+					currentRay.currentMedium = transmittedMedium;
+					currentRay.transmitted = !currentRay.transmitted;
+					rays[pixelIdx] = currentRay;
 				}
-				else /*diffuse*/ {
+				else { // diffuse
 					accumulatedColor[pixelIdx] += colorMask[pixelIdx] * material.emission;
 					colorMask[pixelIdx] *= material.diffuse;
 
 					// Compute new ray direction and origin
-					currentRay.origin = intersection.position + 0.005f * intersection.normal;
+					currentRay.origin = intersection.position + 0.001f * intersection.normal;
 					currentRay.direction = HemisphereCosSample(intersection.normal,
 															   uniform(rng),
 															   uniform(rng));
@@ -293,7 +305,7 @@ namespace HKernels {
 			}
 			else {
 				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.9f * glm::vec3(0.69f, 0.86f, 0.89f);
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.3f * glm::vec3(0.69f, 0.86f, 0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 

@@ -25,6 +25,7 @@ struct HRay {
 	float maxt;
 	HMedium enteredMedium;
 	HMedium currentMedium;
+	bool transmitted;
 };
 
 struct HBoundingBox {

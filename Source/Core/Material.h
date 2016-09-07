@@ -18,12 +18,13 @@ enum HMaterialType {// PBRT material types, only using a few atm
 
 struct HMaterial {
 	
-	// TODO: Medium initialization in constructor
 	__host__ __device__ HMaterial() {}
 	__host__ __device__ HMaterial(glm::vec3 diff, glm::vec3 em)
 		: diffuse(diff), emission(em) {}
 	__host__ __device__ HMaterial(glm::vec3 diff, glm::vec3 em, glm::vec3 spec)
 		: diffuse(diff), emission(em), specular(spec) {}
+	__host__ __device__ HMaterial(glm::vec3 diff, glm::vec3 em, glm::vec3 spec, float eta)
+		: diffuse(diff), emission(em), specular(spec), medium(HMedium(eta)) {}
 
 	// TODO: Color, Scattering properties, BSDF etc...
 	glm::vec3 diffuse;
