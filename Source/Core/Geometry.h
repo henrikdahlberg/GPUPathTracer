@@ -23,6 +23,8 @@ struct HRay {
 	glm::vec3 direction;
 	float mint;
 	float maxt;
+	HMedium enteredMedium;
+	HMedium currentMedium;
 };
 
 struct HBoundingBox {
@@ -79,7 +81,7 @@ struct HBoundingBox {
 
 	glm::vec3 pmin;
 	glm::vec3 pmax;
-};
+};	
 
 //////////////////////////////////////////////////////////////////////////
 // Geometry inline functions
@@ -87,29 +89,29 @@ struct HBoundingBox {
 
 __host__ __device__ inline HBoundingBox Union(const HBoundingBox &b, const glm::vec3 &p) {
 	return HBoundingBox(glm::vec3(fmin(b.pmin.x, p.x),
-		fmin(b.pmin.y, p.y),
-		fmin(b.pmin.z, p.z)),
-		glm::vec3(fmax(b.pmax.x, p.x),
-		fmax(b.pmax.y, p.y),
-		fmax(b.pmax.z, p.z)));
+								  fmin(b.pmin.y, p.y),
+								  fmin(b.pmin.z, p.z)),
+						glm::vec3(fmax(b.pmax.x, p.x),
+								  fmax(b.pmax.y, p.y),
+								  fmax(b.pmax.z, p.z)));
 }
 
 __host__ __device__ inline HBoundingBox Union(const HBoundingBox &b1, const HBoundingBox &b2) {
 	return HBoundingBox(glm::vec3(fmin(b1.pmin.x, b2.pmin.x),
-		fmin(b1.pmin.y, b2.pmin.y),
-		fmin(b1.pmin.z, b2.pmin.z)),
-		glm::vec3(fmax(b1.pmax.x, b2.pmax.x),
-		fmax(b1.pmax.y, b2.pmax.y),
-		fmax(b1.pmax.z, b2.pmax.z)));
+								  fmin(b1.pmin.y, b2.pmin.y),
+								  fmin(b1.pmin.z, b2.pmin.z)),
+						glm::vec3(fmax(b1.pmax.x, b2.pmax.x),
+								  fmax(b1.pmax.y, b2.pmax.y),
+								  fmax(b1.pmax.z, b2.pmax.z)));
 }
 
 __host__ __device__ inline HBoundingBox Intersection(const HBoundingBox &b1, const HBoundingBox &b2) {
 	return HBoundingBox(glm::vec3(fmax(b1.pmin.x, b2.pmin.x),
-		fmax(b1.pmin.y, b2.pmin.y),
-		fmax(b1.pmin.z, b2.pmin.z)),
-		glm::vec3(fmin(b1.pmax.x, b2.pmax.x),
-		fmin(b1.pmax.y, b2.pmax.y),
-		fmin(b1.pmax.z, b2.pmax.z)));
+								  fmax(b1.pmin.y, b2.pmin.y),
+								  fmax(b1.pmin.z, b2.pmin.z)),
+						glm::vec3(fmin(b1.pmax.x, b2.pmax.x),
+								  fmin(b1.pmax.y, b2.pmax.y),
+								  fmin(b1.pmax.z, b2.pmax.z)));
 }
 
 __host__ __device__ inline bool Overlaps(const HBoundingBox &b1, const HBoundingBox &b2) {

@@ -2,6 +2,7 @@
 #include <Core/Camera.h>
 #include <Core/Scene.h>
 #include <Core/Image.h>
+#include <Core/Medium.h>
 #include <Shapes/Sphere.h>
 #include <Utility/MathUtility.h>
 
@@ -23,6 +24,12 @@ union HColor {
 	struct { unsigned char x, y, z, w; } components;
 };
 
+// Stores computed Fresnel reflection and transmission
+struct HFresnel {
+	float reflection;
+	float transmission;
+};
+
 // Stream compaction predicate
 struct IsNegative {
 	__host__ __device__ bool operator()(const int &x) { return x < 0; }
@@ -34,7 +41,7 @@ namespace HKernels {
 	// Device Kernels
 	//////////////////////////////////////////////////////////////////////////
 
-	__device__ glm::vec3 HemisphereCosSample(const glm::vec3 normal,
+	__device__ glm::vec3 HemisphereCosSample(const glm::vec3 &normal,
 											 const float r1,
 											 const float r2) {
 		float c = sqrtf(r1);
@@ -45,6 +52,64 @@ namespace HKernels {
 		glm::vec3 v = cross(normal, u);
 
 		return sqrtf(1.0f - r1) * normal + (cosf(phi) * c * u) + (sinf(phi) * c * v);
+
+	}
+	
+	__device__ inline glm::vec3 ReflectionDir(const glm::vec3 &normal,
+											  const glm::vec3 &incident) {
+		return 2.0f * dot(normal, incident) * normal - incident;
+	}
+
+	__device__ glm::vec3 TransmissionDir(const glm::vec3 &normal,
+										 const glm::vec3 &incident,
+										 float eta1, float eta2) {
+		float cosTheta1 = dot(normal, incident);
+		float r = eta1 / eta2;
+
+		float radicand = 1.0f - powf(r, 2.0f) * (1.0f - powf(cosTheta1, 2.0f));
+
+		if (radicand < 0.0f) { // total internal reflection
+			return glm::vec3(0.0f); //temp, dont know what to do here
+		}
+
+		float cosTheta2 = sqrtf(radicand);
+		return r*(-1.0f*incident) + (r*cosTheta1 - cosTheta2)*normal;
+
+		//if (cosTheta1 > 0.0f) {
+		//	return r*(-1.0f*incident) + (r*cosTheta1 - cosTheta2)*normal;
+		//}
+		//else {
+		//	return r*(-1.0f*incident) + (r*cosTheta1 + cosTheta2)*normal;
+		//}
+	}
+
+	__device__ HFresnel fresnelEquations(const glm::vec3 &normal,
+										 const glm::vec3 &incidentDir,
+										 float eta1, float eta2,
+										 const glm::vec3 &reflectionDir,
+										 const glm::vec3 &transmissionDir) {
+		HFresnel fresnel;
+
+		// TEMP TIR detection
+		if (transmissionDir.length() < 0.12345f || dot(normal, transmissionDir) > 0.0f) {
+			fresnel.reflection = 1.0f;
+			fresnel.transmission = 0.0f;
+			return fresnel;
+		}
+
+		float cosTheta1 = dot(normal, incidentDir);
+		float cosTheta2 = dot(-normal, transmissionDir);
+
+		float s1 = eta1*cosTheta1;
+		float s2 = eta2*cosTheta2;
+		float p1 = eta1*cosTheta2;
+		float p2 = eta2*cosTheta1;
+		
+		// Equal mix of polarized and unpolarized
+		fresnel.reflection = 0.5f*(powf((s1-s2)/(s1+s2), 2.0f) + powf((p1-p2)/(p1+p2), 2.0f));
+		//fresnel.reflection = cosTheta2; //temp test
+		fresnel.transmission = 1.0f - fresnel.reflection;
+		return fresnel;
 
 	}
 
@@ -105,8 +170,13 @@ namespace HKernels {
 				position += (cosf(angle) * right + sinf(angle) * up) * distance;
 			}
 
-			rays[i].origin = position;
-			rays[i].direction = normalize(pointOnImagePlane - position);
+			HRay ray;
+			ray.origin = position;
+			ray.direction = normalize(pointOnImagePlane - position);
+			ray.enteredMedium = HMedium();
+			ray.currentMedium = HMedium();
+
+			rays[i] = ray;
 		}
 	}
 
@@ -131,6 +201,8 @@ namespace HKernels {
 
 			int pixelIdx = livePixels[i];
 
+			HRay currentRay = rays[pixelIdx];
+
 			// Initialize random number generator
 			thrust::default_random_engine rng(TWHash(pixelIdx) * currentSeed);
 			thrust::uniform_real_distribution<float> uniform(0.0f, 1.0f);
@@ -144,13 +216,13 @@ namespace HKernels {
 
 			for (int sphereIdx = 0; sphereIdx < numSpheres; sphereIdx++) {
 				// Check ray for sphere intersection
-				if (spheres[sphereIdx].Intersect(rays[pixelIdx], t, intersection)) {
+				if (spheres[sphereIdx].Intersect(currentRay, t, intersection)) {
 					nearestSphereIdx = sphereIdx;
 				}
 			}
 
 			for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
-				if (triangles[triIdx].Intersect(rays[pixelIdx], t, intersection)) {
+				if (triangles[triIdx].Intersect(currentRay, t, intersection)) {
 					nearestTriIdx = triIdx;
 					nearestIsTri = true;
 				}
@@ -165,32 +237,63 @@ namespace HKernels {
 				else {
 					material = spheres[nearestSphereIdx].material;
 				}
-
-				// diffuse, emission, TODO: Specular etc
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * material.emission;
-				colorMask[pixelIdx] *= material.diffuse;
-
+				
 				// TODO: Fix normal directions if bouncing from other side
 				// TODO: BSDF etc
 				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
 				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
 
+				glm::vec3 incidentDir = -currentRay.direction;
+
 				// TEMP Backface checking and normal flipping:
 				// Instead of if-statement, just multiply normal by sign of dot(...), might help thread divergence
-				if (dot(-rays[pixelIdx].direction, intersection.normal) < 0.0f) {
+				if (dot(incidentDir, intersection.normal) < 0.0f) {
 					intersection.normal = -1.0f * intersection.normal;
 				}
 
-				// Compute new ray direction and origin
-				rays[pixelIdx].origin = intersection.position + 0.005f * intersection.normal;
-				rays[pixelIdx].direction = HemisphereCosSample(intersection.normal,
+				// TODO: After an intersection is found, do the scattering in a separate kernel instead
+				// TODO: ray keeps check of which medium it is propagating through?
+				HMedium incidentMedium = currentRay.medium;
+				HMedium transmittedMedium = material.medium;
+
+				glm::vec3 reflectionDir = ReflectionDir(intersection.normal, incidentDir);
+				glm::vec3 transmissionDir = TransmissionDir(intersection.normal, incidentDir,
+															incidentMedium.eta,
+															transmittedMedium.eta);
+
+				bool doSpecular = (material.materialType & SPECULAR); // TEMP
+				bool doReflect = doSpecular &&
+					(uniform(rng) < fresnelEquations(intersection.normal,
+													 incidentDir,
+													 incidentMedium.eta,
+													 transmittedMedium.eta,
+													 reflectionDir,
+													 transmissionDir).reflection);
+				if (doReflect) {
+					colorMask[pixelIdx] *= material.specular;
+
+					currentRay.origin = intersection.position + 0.005f * intersection.normal;
+					currentRay.direction = reflectionDir;
+					rays[pixelIdx] = currentRay;
+				}
+				else if (false /*transmission*/) {
+
+				}
+				else /*diffuse*/ {
+					accumulatedColor[pixelIdx] += colorMask[pixelIdx] * material.emission;
+					colorMask[pixelIdx] *= material.diffuse;
+
+					// Compute new ray direction and origin
+					currentRay.origin = intersection.position + 0.005f * intersection.normal;
+					currentRay.direction = HemisphereCosSample(intersection.normal,
 															   uniform(rng),
 															   uniform(rng));
-
+					rays[pixelIdx] = currentRay;
+				}
 			}
 			else {
 				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.0f * glm::vec3(0.69f, 0.86f, 0.89f);
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.9f * glm::vec3(0.69f, 0.86f, 0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 

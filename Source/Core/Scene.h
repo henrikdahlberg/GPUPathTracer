@@ -5,14 +5,12 @@
 #include <Shapes/Sphere.h>
 #include <Utility/FileLoader.h>
 
-struct HSceneData
-{
+struct HSceneData {
 	HSphere* spheres;
 	unsigned int numSpheres;
 };
 
-class HScene
-{
+class HScene {
 public:
 	HScene() {}
 	virtual ~HScene() {}
@@ -21,7 +19,7 @@ public:
 	void LoadSceneFile();
 
 	HSceneData* GetSceneData() { return &sceneData; }
-	
+
 	HTriangle* triangles;
 	unsigned int numTriangles;
 	HSphere* spheres;

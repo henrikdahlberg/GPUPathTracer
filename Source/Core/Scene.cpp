@@ -4,62 +4,60 @@
 #include <Shapes/Sphere.h>
 
 void HScene::LoadSceneFile() {
-	// Random colored sphere scene
-	//numSpheres = 300;
-	//spheres = new HSphere[numSpheres];
-
-	//srand(time(nullptr));
-
-	//for (int i = 0; i < numSpheres - 1; i++) {
-
-	//	spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
-	//									0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
-	//									-4.0f*(float)rand() / (float)RAND_MAX);
-	//	spheres[i].radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
-	//	spheres[i].material.diffuse = glm::vec3((float)rand() / (float)RAND_MAX,
-	//											(float)rand() / (float)RAND_MAX,
-	//											(float)rand() / (float)RAND_MAX);
-
-	//	if ((float)rand() / (float)RAND_MAX > 0.8f) {
-	//		spheres[i].material.emission = glm::vec3(5.0f * (float)rand() / (float)RAND_MAX,
-	//												 5.0f * (float)rand() / (float)RAND_MAX,
-	//												 5.4f * (float)rand() / (float)RAND_MAX);
-	//	}
-	//	else {
-	//		spheres[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-	//	}
-	//}
-
-	////spheres[numSpheres - 2].position = glm::vec3(0.0f, -1e5f, 0.0f);
-	////spheres[numSpheres - 2].radius = 1e5f;
-	////spheres[numSpheres - 2].material.diffuse = glm::vec3(0.15f, 0.15f, 0.15f);
-	////spheres[numSpheres - 2].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	//spheres[numSpheres - 1].position = glm::vec3(0.0f, 3.0f, 0.0f);
-	//spheres[numSpheres - 1].radius = 0.8f;
-	//spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
-	//spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
-
-	/*HMaterial floorMaterial = HMaterial(glm::vec3(0.4f), glm::vec3(0.0f));
-	numTriangles = 2;
-	triangles = new HTriangle[numTriangles];
-	triangles[0] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-	glm::vec3(25.0f, -0.1f, -25.0f),
-	glm::vec3(25.0f, -0.1f, 25.0f),
-	floorMaterial);
-	triangles[1] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-	glm::vec3(25.0f, -0.1f, 25.0f),
-	glm::vec3(-25.0f, -0.1f, 25.0f),
-	floorMaterial);*/
-
-	//////////////////////////////////////////////////////////////////////////
-	// Cornell box
-	//////////////////////////////////////////////////////////////////////////
 	HMaterial white = HMaterial(glm::vec3(0.95f), glm::vec3(0.0f));
 	HMaterial red = HMaterial(glm::vec3(0.7f, 0.01f, 0.01f), glm::vec3(0.0f));
 	HMaterial green = HMaterial(glm::vec3(0.01f, 0.3f, 0.01f), glm::vec3(0.0f));
 	HMaterial light = HMaterial(glm::vec3(0.0f), 20.0f * glm::vec3(0.736507f, 0.642866f, 0.210431f));
+	HMaterial redSpec = HMaterial(glm::vec3(0.87f, 0.15f, 0.15f), glm::vec3(0.0f), glm::vec3(1.0f));
+	redSpec.medium.eta = 1.491f;
+	redSpec.materialType = SPECULAR;
 
+	// Random colored sphere scene
+	/*numSpheres = 300;
+	spheres = new HSphere[numSpheres];
+
+	srand(time(nullptr));
+
+	for (int i = 0; i < numSpheres - 1; i++) {
+
+		spheres[i].position = glm::vec3(2.0f - 4.0f*(float)rand() / (float)RAND_MAX,
+										0.1f + 1.4f*(float)rand() / (float)RAND_MAX,
+										-4.0f*(float)rand() / (float)RAND_MAX);
+		spheres[i].radius = 0.01f + 0.2f*(float)rand() / (float)RAND_MAX;
+		spheres[i].material.diffuse = glm::vec3((float)rand() / (float)RAND_MAX,
+												(float)rand() / (float)RAND_MAX,
+												(float)rand() / (float)RAND_MAX);
+
+		if ((float)rand() / (float)RAND_MAX > 0.8f) {
+			spheres[i].material.emission = glm::vec3(5.0f * (float)rand() / (float)RAND_MAX,
+													 5.0f * (float)rand() / (float)RAND_MAX,
+													 5.4f * (float)rand() / (float)RAND_MAX);
+		}
+		else {
+			spheres[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+		}
+	}
+
+	spheres[numSpheres - 1].position = glm::vec3(0.0f, 3.0f, 0.0f);
+	spheres[numSpheres - 1].radius = 0.8f;
+	spheres[numSpheres - 1].material.diffuse = glm::vec3(0.0f, 0.0f, 0.0f);
+	spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
+
+	HMaterial floorMaterial = HMaterial(glm::vec3(0.1f), glm::vec3(0.0f));
+	numTriangles = 2;
+	triangles = new HTriangle[numTriangles];
+	triangles[0] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+							 glm::vec3(25.0f, -0.1f, -25.0f),
+							 glm::vec3(25.0f, -0.1f, 25.0f),
+							 floorMaterial);
+	triangles[1] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+							 glm::vec3(25.0f, -0.1f, 25.0f),
+							 glm::vec3(-25.0f, -0.1f, 25.0f),
+							 floorMaterial);*/
+
+	//////////////////////////////////////////////////////////////////////////
+	// Cornell box
+	//////////////////////////////////////////////////////////////////////////
 	numTriangles = 40;
 
 	triangles = new HTriangle[numTriangles];
@@ -199,7 +197,7 @@ void HScene::LoadSceneFile() {
 
 	spheres[0].radius = 0.18f;
 	spheres[0].position = glm::vec3(0.25f, 0.18f + 0.2951f, 0.15f);
-	spheres[0].material = white;
+	spheres[0].material = redSpec;
 	//------------------------------------------------------------------------
 
 	// Temp meshloading

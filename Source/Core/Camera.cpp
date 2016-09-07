@@ -25,9 +25,10 @@ void HCamera::InitDefaults() {
 	cameraData.worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	UpdateCameraVectors();
-	cameraData.apertureRadius = 0.00f;
+	cameraData.apertureRadius = 0.005f;
 	cameraData.focalDistance = 2.1f;
-	cameraData.FOV.x = 39.0f;
+	cameraData.FOV.x = 39.0f; //Cornell
+	//cameraData.FOV.x = 75.0f;
 	velocity = 3.0f;
 	mouseSensitivity = 0.25f;
 }
