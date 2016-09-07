@@ -21,6 +21,7 @@ struct HMedium {
 
 	__host__ __device__ HMedium() {
 		eta = 1.000293f; //default IOR of air
+		scatteringProperties = HScatteringProperties();
 	}
 	__host__ __device__ HMedium(float e)
 		: eta(e) {}

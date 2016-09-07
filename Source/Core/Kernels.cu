@@ -12,7 +12,7 @@
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
-#define MAX_RAY_DEPTH 11 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 40 // Should probably be part of the HRenderer
 #define STREAM_COMPACTION	
 
 using namespace HMathUtility;
@@ -53,6 +53,22 @@ namespace HKernels {
 
 		return sqrtf(1.0f - r1) * normal + (cosf(phi) * c * u) + (sinf(phi) * c * v);
 
+	}
+
+	__device__ glm::vec3 ScatterSample(const float r1, const float r2) {
+		float cosTheta = 2.0f*r1 - 1.0f;
+		float sinTheta = sqrtf(1 - cosTheta*cosTheta);
+		float phi = M_2PI * r2;
+
+		return glm::vec3(cosTheta, cosf(phi)*sinTheta, sinf(phi)*sinTheta);
+	}
+
+	__device__ glm::vec3 Transmission(glm::vec3 absorptionMultiplier, float distance) {
+		glm::vec3 res;
+		res.x = powf(M_E, -absorptionMultiplier.x * distance);
+		res.y = powf(M_E, -absorptionMultiplier.y * distance);
+		res.z = powf(M_E, -absorptionMultiplier.z * distance);
+		return res;
 	}
 	
 	__device__ inline glm::vec3 ReflectionDir(const glm::vec3 &normal,
@@ -227,6 +243,35 @@ namespace HKernels {
 				}
 			}
 
+			// Subsurface scattering. Maybe this should be after the t<M_INF if-clause
+			// In theory we should not be scattering unless we are in an enclosed material, and thus t will not be inf.
+			// For volumetric scattering we may need to scatter in empty air?
+			HScatteringProperties scattering = currentRay.currentMedium.scatteringProperties;
+			if (scattering.reducedScatteringCoefficient > 0 ||
+				dot(scattering.absorptionMultiplier, scattering.absorptionMultiplier) > M_EPSILON) {
+				float scatteringDistance = -log(uniform(rng)) / scattering.reducedScatteringCoefficient;
+				if (scatteringDistance < t) {
+					// Scattering
+					currentRay.origin = currentRay(scatteringDistance);
+					currentRay.direction = ScatterSample(uniform(rng), uniform(rng));
+					rays[pixelIdx] = currentRay;
+
+					// Absorption
+					colorMask[pixelIdx] *= Transmission(scattering.absorptionMultiplier, scatteringDistance);
+
+					if (length(colorMask[pixelIdx]) < M_EPSILON) {
+						// Mark ray for termination
+						livePixels[i] = -1;
+					}
+
+					return;
+				}
+				else {
+					// Absorption
+					colorMask[pixelIdx] *= Transmission(scattering.absorptionMultiplier, t);
+				}
+			}
+
 			if (t < M_INF) {
 
 				HMaterial material;
@@ -251,7 +296,6 @@ namespace HKernels {
 				}
 
 				// TODO: After an intersection is found, do the scattering in a separate kernel instead
-				// TODO: ray keeps check of which medium it is propagating through?
 
 				HMedium incidentMedium = currentRay.currentMedium;
 				HMedium transmittedMedium;

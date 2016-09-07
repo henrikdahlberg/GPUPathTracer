@@ -27,11 +27,19 @@ void HScene::LoadSceneFile() {
 	HMaterial glossyPurple = HMaterial(glm::vec3(0.5f, 0.1f, 0.9f), glm::vec3(0.0f), glm::vec3(1.0f), 1.491f);
 	glossyPurple.materialType = SPECULAR;
 
-	HMaterial glass = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.6f);
+	HMaterial glass = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.62f);
 	glass.materialType = ALL_TRANS;
+
+	HMaterial greenGlass = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.62f);
+	greenGlass.medium.scatteringProperties = HScatteringProperties(0.0f, glm::vec3(1.0f, 0.01f, 1.0f));
+	greenGlass.materialType = ALL_TRANS;
 
 	HMaterial mirror = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.9f);
 	mirror.materialType = REFLECTION;
+
+	HMaterial marble = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.486f);
+	marble.medium.scatteringProperties = HScatteringProperties(8.0f, glm::vec3(0.6f));
+	marble.materialType = ALL_TRANS;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Random colored sphere scene
@@ -81,7 +89,7 @@ void HScene::LoadSceneFile() {
 
 	spheres[2].position = glm::vec3(0.2f, 0.09f, -0.15f);
 	spheres[2].radius = 0.19f;
-	spheres[2].material = glossyPurple;
+	spheres[2].material = marble;
 
 	spheres[3].position = glm::vec3(0.3f, -0.06f, 0.4f);
 	spheres[3].radius = 0.04f;
@@ -93,7 +101,7 @@ void HScene::LoadSceneFile() {
 
 	spheres[5].position = glm::vec3(-0.05f, 0.02f, 0.2f);
 	spheres[5].radius = 0.12f;
-	spheres[5].material = glossyOrange;
+	spheres[5].material = greenGlass;
 
 	spheres[6].position = glm::vec3(0.2f, 0.03f + 0.38f, -0.15f);
 	spheres[6].radius = 0.13f;

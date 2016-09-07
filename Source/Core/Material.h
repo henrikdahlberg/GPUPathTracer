@@ -3,7 +3,7 @@
 
 #include <Core/Medium.h>
 
-enum HMaterialType {// PBRT material types, only using a few atm
+enum HMaterialType {// PBRT material types, only using a few very sloppily atm
 	//want to implement multiple B(R/T)DFs in the future
 	REFLECTION		= 1<<0,
 	TRANSMISSION	= 1<<1,
