@@ -12,7 +12,7 @@
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
-#define MAX_RAY_DEPTH 40 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 41 // Should probably be part of the HRenderer
 #define STREAM_COMPACTION	
 
 using namespace HMathUtility;
@@ -40,7 +40,6 @@ namespace HKernels {
 	//////////////////////////////////////////////////////////////////////////
 	// Device Kernels
 	//////////////////////////////////////////////////////////////////////////
-
 	__device__ glm::vec3 HemisphereCosSample(const glm::vec3 &normal,
 											 const float r1,
 											 const float r2) {
@@ -90,13 +89,6 @@ namespace HKernels {
 
 		float cosTheta2 = sqrtf(radicand);
 		return r*(-1.0f*incident) + (r*cosTheta1 - cosTheta2)*normal;
-
-		//if (cosTheta1 > 0.0f) {
-		//	return r*(-1.0f*incident) + (r*cosTheta1 - cosTheta2)*normal;
-		//}
-		//else {
-		//	return r*(-1.0f*incident) + (r*cosTheta1 + cosTheta2)*normal;
-		//}
 	}
 
 	__device__ HFresnel fresnelEquations(const glm::vec3 &normal,
@@ -107,11 +99,11 @@ namespace HKernels {
 		HFresnel fresnel;
 
 		// TEMP TIR detection, not needed?
-		if (transmissionDir.length() < 0.12345f || dot(normal, transmissionDir) > 0.0f) {
-			fresnel.reflection = 1.0f;
-			fresnel.transmission = 0.0f;
-			return fresnel;
-		}
+		//if (transmissionDir.length() < 0.12345f || dot(normal, transmissionDir) > 0.0f) {
+		//	fresnel.reflection = 1.0f;
+		//	fresnel.transmission = 0.0f;
+		//	return fresnel;
+		//}
 
 		float cosTheta1 = dot(normal, incidentDir);
 		float cosTheta2 = dot(-normal, transmissionDir);
@@ -125,13 +117,11 @@ namespace HKernels {
 		fresnel.reflection = 0.5f*(powf((s1-s2)/(s1+s2), 2.0f) + powf((p1-p2)/(p1+p2), 2.0f));
 		fresnel.transmission = 1.0f - fresnel.reflection;
 		return fresnel;
-
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Global Kernels
 	//////////////////////////////////////////////////////////////////////////
-
 	__global__ void InitData(unsigned int numPixels,
 							 int* livePixels,
 							 glm::vec3* colorMask,
@@ -171,9 +161,9 @@ namespace HKernels {
 			float dy = uniform(rng) - 0.5f;
 
 			// Compute point on image plane and account for focal distance
-			glm::vec3 pointOnImagePlane = position + ((forward
+			glm::vec3 pointOnImagePlane = position + (forward
 				+ (2.0f * (dx + x) / (cameraData->resolution.x - 1.0f) - 1.0f) * right * tanf(cameraData->FOV.x * M_PI_2 * M_1_180)
-				+ (2.0f * (dy + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * up * tanf(cameraData->FOV.y * M_PI_2 * M_1_180)))
+				+ (2.0f * (dy + y) / (cameraData->resolution.y - 1.0f) - 1.0f) * up * tanf(cameraData->FOV.y * M_PI_2 * M_1_180))
 				* cameraData->focalDistance;
 
 			float apertureRadius = cameraData->apertureRadius;
@@ -299,6 +289,8 @@ namespace HKernels {
 
 				HMedium incidentMedium = currentRay.currentMedium;
 				HMedium transmittedMedium;
+				// Here we handle the assigning of medium based on if the ray has been transmitted or not
+				// We assume that all transmissive materials are closed disjoint manifolds
 				if (currentRay.transmitted) {
 					// Ray is coming from inside of the object it has entered
 					transmittedMedium = currentRay.enteredMedium;
@@ -349,7 +341,7 @@ namespace HKernels {
 			}
 			else {
 				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.3f * glm::vec3(0.69f, 0.86f, 0.89f);
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * (1.0f - 0.5f * fabs(dot(currentRay.direction, glm::vec3(0.0f, 1.0f, 0.0f)))) * glm::vec3(0.69f, 0.86f, 0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 

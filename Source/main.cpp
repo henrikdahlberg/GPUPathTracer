@@ -36,7 +36,7 @@ void Initialize(int argc, char** argv);
 void SetWindowTitle(GLFWwindow* window, double deltaTime);
 void Update();
 void Display();
-void ProcessMovement(double deltaTime);
+void ProcessKeyboardInput(double deltaTime);
 
 //////////////////////////////////////////////////////////////////////////
 // OpenGL callback declarations
@@ -247,7 +247,7 @@ void Scroll(GLFWwindow* window, double xoffset, double yoffset) {
 	camera->ProcessMouseScroll(yoffset);
 }
 
-void ProcessMovement(double deltaTime) {
+void ProcessKeyboardInput(double deltaTime) {
 
 	if (input[GLFW_KEY_W]) {
 		camera->ProcessMovement(FORWARD, deltaTime);
@@ -278,13 +278,29 @@ void ProcessMovement(double deltaTime) {
 		renderer->InitScene(scene);
 		bReset = true;
 	}
+	if (input[GLFW_KEY_T]) {
+		camera->SetApertureRadius(camera->GetApertureRadius() - 0.001f);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_Y]) {
+		camera->SetApertureRadius(camera->GetApertureRadius() + 0.001f);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_G]) {
+		camera->SetFocalDistance(camera->GetFocalDistance() - 0.05f);
+		bReset = true;
+	}
+	if (input[GLFW_KEY_H]) {
+		camera->SetFocalDistance(camera->GetFocalDistance() + 0.05f);
+		bReset = true;
+	}
 }
 
 void Update() {
 	double currentTime = glfwGetTime();
 	deltaTime = currentTime - lastTime;
 	SetWindowTitle(window, deltaTime);
-	ProcessMovement(deltaTime);
+	ProcessKeyboardInput(deltaTime);
 	if (bReset) {
 		renderer->Reset(camera);
 		bReset = false;

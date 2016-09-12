@@ -5,9 +5,13 @@
 
 void HScene::LoadSceneFile() {
 	HMaterial white = HMaterial(glm::vec3(0.95f), glm::vec3(0.0f));
+	white.materialType = DIFFUSE;
 	HMaterial red = HMaterial(glm::vec3(0.7f, 0.01f, 0.01f), glm::vec3(0.0f));
+	red.materialType = DIFFUSE;
 	HMaterial green = HMaterial(glm::vec3(0.01f, 0.3f, 0.01f), glm::vec3(0.0f));
+	green.materialType = DIFFUSE;
 	HMaterial cornellLight = HMaterial(glm::vec3(0.0f), 20.0f * glm::vec3(0.736507f, 0.642866f, 0.210431f));
+	cornellLight.materialType = DIFFUSE;
 
 	HMaterial brightLight = HMaterial(glm::vec3(0.0f), glm::vec3(20.0f, 20.0f, 17.0f));
 	brightLight.materialType = DIFFUSE;
@@ -36,6 +40,26 @@ void HScene::LoadSceneFile() {
 
 	HMaterial mirror = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.9f);
 	mirror.materialType = REFLECTION;
+
+	HMaterial blueSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.1f);
+	blueSub.medium.scatteringProperties = HScatteringProperties(256.0f, glm::vec3(100.0f, 30.0f, 0.02f));
+	blueSub.materialType = ALL_TRANS;
+
+	HMaterial greenSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.4f);
+	greenSub.medium.scatteringProperties = HScatteringProperties(40.0f, glm::vec3(10.0f, 0.2f, 10.0f));
+	greenSub.materialType = ALL_TRANS;
+
+	HMaterial redSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.35f);
+	redSub.medium.scatteringProperties = HScatteringProperties(9.0f, glm::vec3(0.02f, 5.1f, 5.7f));
+	redSub.materialType = ALL_TRANS;
+
+	HMaterial yellowSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.35f);
+	yellowSub.medium.scatteringProperties = HScatteringProperties(9.0f, glm::vec3(0.02f, 0.57f, 5.7f));
+	yellowSub.materialType = ALL_TRANS;
+
+	HMaterial orangeSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.35f);
+	orangeSub.medium.scatteringProperties = HScatteringProperties(32.0f, glm::vec3(0.02f, 8.0f, 50.f));
+	orangeSub.materialType = ALL_TRANS;
 
 	HMaterial marble = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.486f);
 	marble.medium.scatteringProperties = HScatteringProperties(8.0f, glm::vec3(0.6f));
@@ -76,24 +100,33 @@ void HScene::LoadSceneFile() {
 	//spheres[numSpheres - 1].material.emission = glm::vec3(5.0f, 5.0f, 5.4f);
 	//spheres[numSpheres - 1].material.materialType = DIFFUSE;
 
+	//////////////////////////////////////////////////////////////////////////
+	// Fresnel test scene
+	//////////////////////////////////////////////////////////////////////////
 	numSpheres = 11;
 	spheres = new HSphere[numSpheres];
 
-	spheres[0].position = glm::vec3(0.4f, 1.0f, -1.0f);
-	spheres[0].radius = 0.2f;
-	spheres[0].material = brightLight;
+	//spheres[0].position = glm::vec3(0.4f, 1.0f, -1.0f);
+	//spheres[0].radius = 0.2f;
+	//spheres[0].material = brightLight;
+
+	spheres[0].position = glm::vec3(-0.4f, 0.05f, 0.1f);
+	spheres[0].radius = 0.15f;
+	spheres[0].material = mirror;
 
 	spheres[1].position = glm::vec3(0.2f, 0.03f, 0.2f);
 	spheres[1].radius = 0.13f;
-	spheres[1].material = glass;
+	spheres[1].material = greenGlass;
 
 	spheres[2].position = glm::vec3(0.2f, 0.09f, -0.15f);
 	spheres[2].radius = 0.19f;
-	spheres[2].material = marble;
+	//spheres[2].material = glossyPurple;
+	spheres[2].material = blueSub;
 
 	spheres[3].position = glm::vec3(0.3f, -0.06f, 0.4f);
 	spheres[3].radius = 0.04f;
-	spheres[3].material = brightLight;
+	//spheres[3].material = brightLight;
+	spheres[3].material = mirror;
 
 	spheres[4].position = glm::vec3(0.8f, 0.3f, 0.0f);
 	spheres[4].radius = 0.4f;
@@ -101,11 +134,13 @@ void HScene::LoadSceneFile() {
 
 	spheres[5].position = glm::vec3(-0.05f, 0.02f, 0.2f);
 	spheres[5].radius = 0.12f;
-	spheres[5].material = greenGlass;
+	//spheres[5].material = glossyOrange;
+	spheres[5].material = marble;
 
 	spheres[6].position = glm::vec3(0.2f, 0.03f + 0.38f, -0.15f);
 	spheres[6].radius = 0.13f;
-	spheres[6].material = glossyLtBlue;
+	//spheres[6].material = glossyLtBlue;
+	spheres[6].material = blueSub;
 
 	spheres[7].position = glm::vec3(-0.18f, 0.09f, -0.12f);
 	spheres[7].radius = 0.19f;
@@ -113,15 +148,18 @@ void HScene::LoadSceneFile() {
 
 	spheres[8].position = glm::vec3(0.2f, 0.26f, 0.2f);
 	spheres[8].radius = 0.10f;
-	spheres[8].material = mirror;
+	//spheres[8].material = mirror;
+	spheres[8].material = redSub;
 
 	spheres[9].position = glm::vec3(0.8f, 0.1f, 0.7f);
 	spheres[9].radius = 0.2f;
-	spheres[9].material = glossyGreen;
+	//spheres[9].material = glossyGreen;
+	spheres[9].material = orangeSub;
 
 	spheres[10].position = glm::vec3(0.8f, 0.46f, 0.7f);
 	spheres[10].radius = 0.16f;
-	spheres[10].material = glossyRed;
+	//spheres[10].material = glossyRed;
+	spheres[10].material = yellowSub;
 
 	HMaterial floorMaterial = HMaterial(glm::vec3(0.1f), glm::vec3(0.0f));
 	floorMaterial.materialType = DIFFUSE;
@@ -135,6 +173,7 @@ void HScene::LoadSceneFile() {
 							 glm::vec3(25.0f, -0.1f, 25.0f),
 							 glm::vec3(-25.0f, -0.1f, 25.0f),
 							 floorMaterial);
+
 
 	////////////////////////////////////////////////////////////////////////////
 	//// Cornell box
@@ -182,8 +221,8 @@ void HScene::LoadSceneFile() {
 	//triangles[9] = HTriangle(E, I, L, white);
 
 	//// Light
-	//triangles[10] = HTriangle(I, J, K, brightLight);
-	//triangles[11] = HTriangle(I, K, L, brightLight);
+	//triangles[10] = HTriangle(I, J, K, cornellLight);
+	//triangles[11] = HTriangle(I, K, L, cornellLight);
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
@@ -285,16 +324,35 @@ void HScene::LoadSceneFile() {
 	//spheres[1].material = glass;
 	////------------------------------------------------------------------------
 
-	// Temp meshloading
+	//// Temp meshloading
 	//HTriangleMesh mesh;
 	//fileLoader.LoadOBJ("bunny.obj", mesh);
 
-	//numTriangles = mesh.triangles.size();
+	//numTriangles = mesh.triangles.size()+2;
 	//triangles = new HTriangle[numTriangles];
-	//for (int i = 0; i < numTriangles; i++) {
+
+
+	//HMaterial floorMaterial = HMaterial(glm::vec3(0.2f), glm::vec3(0.0f));
+	//floorMaterial.materialType = DIFFUSE;
+	////numTriangles = 2;
+	////triangles = new HTriangle[numTriangles];
+	//triangles[0] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+	//						 glm::vec3(25.0f, -0.1f, -25.0f),
+	//						 glm::vec3(25.0f, -0.1f, 25.0f),
+	//						 floorMaterial);
+	//triangles[1] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+	//						 glm::vec3(25.0f, -0.1f, 25.0f),
+	//						 glm::vec3(-25.0f, -0.1f, 25.0f),
+	//						 floorMaterial);
+
+	//mesh.position = glm::vec3(0.2f, -0.266f, 0.0f);
+	//for (int i = 2; i < numTriangles; i++) {
 	//	triangles[i] = mesh.triangles[i];
-	//	triangles[i].material.diffuse = glm::vec3(0.15f, 0.87f, 0.87f);
-	//	triangles[i].material.emission = glm::vec3(0.0f, 0.0f, 0.0f);
+	//	triangles[i].v0 += mesh.position;
+	//	triangles[i].v1 += mesh.position;
+	//	triangles[i].v2 += mesh.position;
+	//	triangles[i].material = orangeSub;
 	//}
+
 
 }

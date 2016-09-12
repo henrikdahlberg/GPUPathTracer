@@ -41,6 +41,8 @@ public:
 	const glm::vec3 GetRight() const			{ return cameraData.right; }
 	const glm::vec3 GetWorldUp() const			{ return cameraData.worldUp; }
 	glm::vec2 GetFOV()							{ return cameraData.FOV; }
+	float GetApertureRadius() const				{ return cameraData.apertureRadius; }
+	float GetFocalDistance() const				{ return cameraData.focalDistance; }
 
 	void SetResolution(const unsigned int width,
 					   const unsigned int height);
@@ -50,6 +52,8 @@ public:
 	void SetRight(const glm::vec3 right)		{ cameraData.right = right; }
 	void SetWorldUp(const glm::vec3 worldUp)	{ cameraData.worldUp = worldUp; }
 	void SetFOV(const float FOV);
+	void SetApertureRadius(const float ar)		{ cameraData.apertureRadius = fmax(ar, 0.0f); }
+	void SetFocalDistance(const float fd)		{ cameraData.focalDistance = fmax(fd, 0.0f); }
 
 	void InitDefaults();
 	// TODO: controller class...

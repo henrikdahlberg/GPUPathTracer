@@ -20,15 +20,17 @@ void HCamera::SetFOV(const float FOV) {
 
 void HCamera::InitDefaults() {
 	yaw = -90.0f;
-	pitch = 0.0f;
+	//pitch = 0.0f;
+	pitch = -7.5f;
 	cameraData.position = glm::vec3(0.00286f, 0.48820f, 1.9306f); // Cornell box camera position
 	cameraData.worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	UpdateCameraVectors();
 	cameraData.apertureRadius = 0.015f;
-	cameraData.focalDistance = 1.1f;
+	//cameraData.focalDistance = 2.1f;
+	cameraData.focalDistance = 1.9f;
 	//cameraData.FOV.x = 39.0f; //Cornell
-	cameraData.FOV.x = 75.0f;
+	cameraData.FOV.x = 35.0f;
 	velocity = 3.0f;
 	mouseSensitivity = 0.25f;
 }
@@ -63,7 +65,7 @@ void HCamera::ProcessMouseMovement(float xoffset, float yoffset) {
 }
 
 void HCamera::ProcessMouseScroll(float yoffset) {
-	velocity = fmax(velocity + yoffset,0.0f);
+	velocity = fmax(velocity + 0.25f*yoffset,0.0f);
 }
 
 void HCamera::UpdateCameraVectors() {

@@ -22,6 +22,9 @@ struct HTriangleMesh
 
 	std::vector<HTriangle> triangles;
 
+	// TODO: 4x4 transform matrix
+	glm::vec3 position;
+
 	static std::vector<HTriangleMesh> meshes;
 
 };

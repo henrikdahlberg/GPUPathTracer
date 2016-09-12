@@ -52,22 +52,22 @@ bool HFileLoader::LoadOBJ(const char* filePath,
 								 {
 								 printf("Invalid line formatting.\n");
 								 return false;
-								 }
+								 }*/
 
-								 mesh.triangles.emplace_back(tempVertices[vertexIndex[0] - 1],
-								 tempVertices[vertexIndex[1] - 1],
-								 tempVertices[vertexIndex[2] - 1]);
+								 //mesh.triangles.emplace_back(tempVertices[vertexIndex[0] - 1],
+								 //tempVertices[vertexIndex[1] - 1],
+								 //tempVertices[vertexIndex[2] - 1]);
 
 
-								 vertexIDs.push_back(vertexIndex[0]);
-								 vertexIDs.push_back(vertexIndex[1]);
-								 vertexIDs.push_back(vertexIndex[2]);
-								 UVIDs.push_back(uvIndex[0]);
-								 UVIDs.push_back(uvIndex[1]);
-								 UVIDs.push_back(uvIndex[2]);
-								 normalIDs.push_back(normalIndex[0]);
-								 normalIDs.push_back(normalIndex[1]);
-								 normalIDs.push_back(normalIndex[2]);*/
+								 //vertexIDs.push_back(vertexIndex[0]);
+								 //vertexIDs.push_back(vertexIndex[1]);
+								 //vertexIDs.push_back(vertexIndex[2]);
+								 //UVIDs.push_back(uvIndex[0]);
+								 //UVIDs.push_back(uvIndex[1]);
+								 //UVIDs.push_back(uvIndex[2]);
+								 //normalIDs.push_back(normalIndex[0]);
+								 //normalIDs.push_back(normalIndex[1]);
+								 //normalIDs.push_back(normalIndex[2]);
 
 			int matches = fscanf(file, "%d %d %d\n",
 								 &vertexIndex[0],
