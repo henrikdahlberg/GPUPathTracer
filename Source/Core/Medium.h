@@ -7,13 +7,13 @@ struct HScatteringProperties {
 
 	__host__ __device__ HScatteringProperties() {
 		reducedScatteringCoefficient = 0.0f;
-		absorptionMultiplier = glm::vec3(0.0f);
+		absorptionCoefficient = glm::vec3(0.0f);
 	}
 	__host__ __device__ HScatteringProperties(float rsc, glm::vec3 abs)
-		: reducedScatteringCoefficient(rsc), absorptionMultiplier(abs) {}
+		: reducedScatteringCoefficient(rsc), absorptionCoefficient(abs) {}
 
 	float reducedScatteringCoefficient;
-	glm::vec3 absorptionMultiplier;
+	glm::vec3 absorptionCoefficient;
 
 };
 

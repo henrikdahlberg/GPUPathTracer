@@ -42,8 +42,7 @@ struct HTriangle : HShape
 			  : v0(vert0), v1(vert1), v2(vert2) { material = mat; }
 
 	__host__ __device__ bool Intersect(HRay &ray, float &t,
-									   HSurfaceInteraction &intersection)
-	{
+									   HSurfaceInteraction &intersection) {
 
 		glm::vec3 e1 = v1 - v0;
 		glm::vec3 e2 = v2 - v0;
@@ -51,8 +50,7 @@ struct HTriangle : HShape
 		float det = dot(e1, P);
 
 		// Not culling back-facing triangles
-		if (det > -M_EPSILON && det < M_EPSILON)
-		{
+		if (det > -M_EPSILON && det < M_EPSILON) {
 			return false;
 		}
 
@@ -60,23 +58,20 @@ struct HTriangle : HShape
 		glm::vec3 T = ray.origin - v0;
 		float u = dot(T, P)*invDet;
 
-		if (u < 0.0f || u > 1.0f)
-		{
+		if (u < 0.0f || u > 1.0f) {
 			return false;
 		}
 
 		glm::vec3 Q = cross(T, e1);
 		float v = dot(ray.direction, Q)*invDet;
 
-		if (v < 0.0f || u + v > 1.0f)
-		{
+		if (v < 0.0f || u + v > 1.0f) {
 			return false;
 		}
 
 		float t0 = dot(e2, Q) * invDet;
 
-		if (t0 > M_EPSILON && t0 < t)
-		{
+		if (t0 > M_EPSILON && t0 < t) {
 			t = t0;
 			intersection.position = ray.origin + t*ray.direction;
 			intersection.normal = normalize(cross(e1, e2));
@@ -87,7 +82,6 @@ struct HTriangle : HShape
 		return false;
 
 	}
-
 
 	__host__ __device__ HBoundingBox Bounds() const { return Union(HBoundingBox(v0, v1), v2); }
 	//const int meshID;

@@ -98,13 +98,6 @@ namespace HKernels {
 										 const glm::vec3 &transmissionDir) {
 		HFresnel fresnel;
 
-		// TEMP TIR detection, not needed?
-		//if (transmissionDir.length() < 0.12345f || dot(normal, transmissionDir) > 0.0f) {
-		//	fresnel.reflection = 1.0f;
-		//	fresnel.transmission = 0.0f;
-		//	return fresnel;
-		//}
-
 		float cosTheta1 = dot(normal, incidentDir);
 		float cosTheta2 = dot(-normal, transmissionDir);
 
@@ -113,7 +106,7 @@ namespace HKernels {
 		float p1 = eta1*cosTheta2;
 		float p2 = eta2*cosTheta1;
 		
-		// Equal mix of polarized and unpolarized
+		// Average s- and p-polarization
 		fresnel.reflection = 0.5f*(powf((s1-s2)/(s1+s2), 2.0f) + powf((p1-p2)/(p1+p2), 2.0f));
 		fresnel.transmission = 1.0f - fresnel.reflection;
 		return fresnel;
@@ -175,6 +168,7 @@ namespace HKernels {
 				position += (cosf(angle) * right + sinf(angle) * up) * distance;
 			}
 
+			// Initialize ray
 			HRay ray;
 			ray.origin = position;
 			ray.direction = normalize(pointOnImagePlane - position);
@@ -212,20 +206,21 @@ namespace HKernels {
 			thrust::default_random_engine rng(TWHash(pixelIdx) * currentSeed);
 			thrust::uniform_real_distribution<float> uniform(0.0f, 1.0f);
 
-			// Sphere intersection
+			// Intersection variables
 			float t = M_INF;
 			HSurfaceInteraction intersection;
 			int nearestSphereIdx;
 			int nearestTriIdx;
 			bool nearestIsTri = false;
 
+			// Sphere intersection
 			for (int sphereIdx = 0; sphereIdx < numSpheres; sphereIdx++) {
-				// Check ray for sphere intersection
 				if (spheres[sphereIdx].Intersect(currentRay, t, intersection)) {
 					nearestSphereIdx = sphereIdx;
 				}
 			}
 
+			// Triangle intersection
 			for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
 				if (triangles[triIdx].Intersect(currentRay, t, intersection)) {
 					nearestTriIdx = triIdx;
@@ -233,12 +228,10 @@ namespace HKernels {
 				}
 			}
 
-			// Subsurface scattering. Maybe this should be after the t<M_INF if-clause
-			// In theory we should not be scattering unless we are in an enclosed material, and thus t will not be inf.
-			// For volumetric scattering we may need to scatter in empty air?
+			// Subsurface scattering.
 			HScatteringProperties scattering = currentRay.currentMedium.scatteringProperties;
 			if (scattering.reducedScatteringCoefficient > 0 ||
-				dot(scattering.absorptionMultiplier, scattering.absorptionMultiplier) > M_EPSILON) {
+				dot(scattering.absorptionCoefficient, scattering.absorptionCoefficient) > M_EPSILON) {
 				float scatteringDistance = -log(uniform(rng)) / scattering.reducedScatteringCoefficient;
 				if (scatteringDistance < t) {
 					// Scattering
@@ -247,7 +240,7 @@ namespace HKernels {
 					rays[pixelIdx] = currentRay;
 
 					// Absorption
-					colorMask[pixelIdx] *= Transmission(scattering.absorptionMultiplier, scatteringDistance);
+					colorMask[pixelIdx] *= Transmission(scattering.absorptionCoefficient, scatteringDistance);
 
 					if (length(colorMask[pixelIdx]) < M_EPSILON) {
 						// Mark ray for termination
@@ -258,12 +251,14 @@ namespace HKernels {
 				}
 				else {
 					// Absorption
-					colorMask[pixelIdx] *= Transmission(scattering.absorptionMultiplier, t);
+					colorMask[pixelIdx] *= Transmission(scattering.absorptionCoefficient, t);
 				}
 			}
 
+			// Treat intersection
 			if (t < M_INF) {
 
+				// Retreive intersection material
 				HMaterial material;
 				if (nearestIsTri) {
 					material = triangles[nearestTriIdx].material;
@@ -272,21 +267,16 @@ namespace HKernels {
 					material = spheres[nearestSphereIdx].material;
 				}
 				
-				// TODO: Fix normal directions if bouncing from other side
-				// TODO: BSDF etc
 				// TODO: Handle roundoff errors properly to avoid self-intersection instead of a fixed offset
 				//		 See PBRT v3, new chapter draft @http://pbrt.org/fp-error-section.pdf
-
 				glm::vec3 incidentDir = -currentRay.direction;
 
 				// TEMP Backface checking and normal flipping:
-				// Instead of if-statement, just multiply normal by sign of dot(...), might help thread divergence
 				if (dot(incidentDir, intersection.normal) < 0.0f) {
 					intersection.normal = -1.0f * intersection.normal;
 				}
 
 				// TODO: After an intersection is found, do the scattering in a separate kernel instead
-
 				HMedium incidentMedium = currentRay.currentMedium;
 				HMedium transmittedMedium;
 				// Here we handle the assigning of medium based on if the ray has been transmitted or not
@@ -300,11 +290,13 @@ namespace HKernels {
 					transmittedMedium = material.medium;
 				}
 
+				// Compute reflection and transmission directions using Snell's law
 				glm::vec3 reflectionDir = ReflectionDir(intersection.normal, incidentDir);
 				glm::vec3 transmissionDir = TransmissionDir(intersection.normal, incidentDir,
 															incidentMedium.eta,
 															transmittedMedium.eta);
 
+				// Russian roulette sampling of specular reflection
 				bool doReflect = (material.materialType & SPECULAR) &&
 					(uniform(rng) < fresnelEquations(intersection.normal,
 													 incidentDir,
@@ -312,6 +304,8 @@ namespace HKernels {
 													 transmittedMedium.eta,
 													 reflectionDir,
 													 transmissionDir).reflection);
+
+				// Based on defined material properties, scatter the ray
 				if (doReflect || material.materialType & REFLECTION) { // reflection
 					colorMask[pixelIdx] *= material.specular;
 
@@ -340,8 +334,8 @@ namespace HKernels {
 				}
 			}
 			else {
-				// Add background color
-				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * (1.0f - 0.5f * fabs(dot(currentRay.direction, glm::vec3(0.0f, 1.0f, 0.0f)))) * glm::vec3(0.69f, 0.86f, 0.89f);
+				// The ray didn't intersect the scene, add background color and terminate ray
+				accumulatedColor[pixelIdx] += colorMask[pixelIdx] * 0.5f * (1.0f - 0.5f * fabs(dot(currentRay.direction, glm::vec3(0.0f, 1.0f, 0.0f)))) * glm::vec3(0.69f, 0.86f, 0.89f);
 				colorMask[pixelIdx] = glm::vec3(0.0f);
 			}
 
@@ -366,6 +360,7 @@ namespace HKernels {
 
 			accumulationBuffer[i] = (accumulationBuffer[i] * (float)(passCounter - 1) + accumulatedColor[i]) / (float)passCounter;
 
+			// Convert to 32-bit color
 			HColor color;
 			color.components.x = (unsigned char)(powf(clamp(accumulationBuffer[i].x, 0.0f, 1.0f), 1 / 2.2f) * 255);
 			color.components.y = (unsigned char)(powf(clamp(accumulationBuffer[i].y, 0.0f, 1.0f), 1 / 2.2f) * 255);
@@ -417,7 +412,7 @@ namespace HKernels {
 		// how to resize allocated memory on device (after stream compaction)
 		checkCudaErrors(cudaMalloc(&livePixels, image->numPixels*sizeof(int)));
 
-		// TODO: Combine these initialization kernels to avoid one kernel launch
+		// Initialize ray properties
 		InitData<<<gridSize, blockSize>>>(numLivePixels,
 										  livePixels,
 										  colorMask,
@@ -447,6 +442,7 @@ namespace HKernels {
 			long time_ms = (time.wSecond * 1000) + time.wMilliseconds;
 			currentSeed = hashedPassCounter + TWHash(time_ms) + rayDepth;
 
+			// Ray propagation kernel
 			TraceKernel<<<newGridSize, blockSize>>>(accumulatedColor,
 													colorMask,
 													numLivePixels,
@@ -458,13 +454,6 @@ namespace HKernels {
 													numTriangles,
 													currentSeed);
 
-			// TODO: Multi kernel ray propagation idea (less divergence per kernel):
-			//			for each depth
-			//				- trace for intersection
-			//				- scatter and compute attenuation
-			//				- compact away dead rays
-			//			end
-
 			// Remove terminated rays with stream compaction
 #if defined(_WIN64) && defined(STREAM_COMPACTION)
 			thrust::device_ptr<int> devPtr(livePixels);
@@ -472,16 +461,17 @@ namespace HKernels {
 			numLivePixels = endPtr.get() - livePixels;
 #endif
 
-			// Debug print
-			// TODO: Remove
+#ifndef NDEBUG
 			if (passCounter == 1) {
 				std::cout << "Current Ray depth: " << rayDepth << std::endl;
 				std::cout << "Number of live rays: " << numLivePixels << std::endl;
 				std::cout << "Number of thread blocks: " << newGridSize << std::endl;
 			}
+#endif // NDEBUG
 		}
 
 		// TODO: Move the accumulation and OpenGL interoperability into the core loop somehow
+		// Perform color conversion and gamma correction and pass computed colors to image
 		AccumulateKernel<<<gridSize, blockSize>>>(image->pixels,
 												  image->accumulationBuffer,
 												  accumulatedColor,

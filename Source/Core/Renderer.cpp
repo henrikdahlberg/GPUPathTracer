@@ -38,6 +38,10 @@ HImage* HRenderer::Render() {
 								 triangles,
 								 numTriangles);
 
+	if (passCounter % 1000 == 0) {
+		image->SavePNG("Images/Autosave");
+	}
+
 	checkCudaErrors(cudaGraphicsUnmapResources(1, &bufferResource, 0));
 	checkCudaErrors(cudaStreamDestroy(CUDAStream));
 

@@ -9,8 +9,8 @@
 // Global variables
 //////////////////////////////////////////////////////////////////////////
 #define WINDOW_TITLE_PREFIX "OpenGL Window"
-unsigned int WINDOW_WIDTH = 1280;
-unsigned int WINDOW_HEIGHT = 720;
+unsigned int WINDOW_WIDTH = 1024;
+unsigned int WINDOW_HEIGHT = 256;
 double lastTime = 0.0;
 double deltaTime;
 bool input[1024]; //TODO: Some input controller class
