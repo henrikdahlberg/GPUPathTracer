@@ -20,10 +20,13 @@ public:
 
 	HSceneData* GetSceneData() { return &sceneData; }
 
-	HTriangle* triangles;
+	//HTriangle* triangles;
+	std::vector<HTriangle> triangles;
 	unsigned int numTriangles;
 	HSphere* spheres;
 	unsigned int numSpheres;
+
+	HBoundingBox sceneBounds;
 
 private:
 	HSceneData sceneData;

@@ -3,6 +3,7 @@
 #include <Core/Scene.h>
 #include <Core/Image.h>
 #include <Core/Medium.h>
+#include <Core/BVH.h>
 #include <Shapes/Sphere.h>
 #include <Utility/MathUtility.h>
 
@@ -110,6 +111,10 @@ namespace HKernels {
 		fresnel.reflection = 0.5f*(powf((s1-s2)/(s1+s2), 2.0f) + powf((p1-p2)/(p1+p2), 2.0f));
 		fresnel.transmission = 1.0f - fresnel.reflection;
 		return fresnel;
+	}
+
+	__device__ void TraverseBVH(HRay& ray, BVHNode* node) {
+		// TODO:
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -227,6 +232,15 @@ namespace HKernels {
 					nearestIsTri = true;
 				}
 			}
+
+			// passed from renderer
+			BVH bvh;
+
+			BVHNode* currentNode = bvh.GetRoot();
+
+
+
+
 
 			// Subsurface scattering.
 			HScatteringProperties scattering = currentRay.currentMedium.scatteringProperties;

@@ -103,7 +103,7 @@ void HScene::LoadSceneFile() {
 	//////////////////////////////////////////////////////////////////////////
 	// Fresnel test scene
 	//////////////////////////////////////////////////////////////////////////
-	numSpheres = 12;
+	numSpheres = 11;
 	spheres = new HSphere[numSpheres];
 
 	//spheres[0].position = glm::vec3(0.4f, 1.0f, -1.0f);
@@ -139,10 +139,10 @@ void HScene::LoadSceneFile() {
 	spheres[6].position = glm::vec3(0.9f, 0.03f + 0.38f, -0.15f);
 	spheres[6].radius = 0.13f;
 	//spheres[6].material = glossyLtBlue;
-	spheres[6].material = blueSub;
+	spheres[6].material = greenSub;
 
-	spheres[7].position = glm::vec3(0.52f, 2.2f/*1.59f*/, -0.12f);
-	spheres[7].radius = 0.29f;
+	spheres[7].position = glm::vec3(1.52f, 2.2f/*1.59f*/, -3.12f);
+	spheres[7].radius = 0.6f;
 	spheres[7].material = brightLight;
 
 	spheres[8].position = glm::vec3(0.9f, 0.26f, 0.2f);
@@ -159,10 +159,6 @@ void HScene::LoadSceneFile() {
 	spheres[10].radius = 0.16f;
 	//spheres[10].material = glossyRed;
 	spheres[10].material = yellowSub;
-
-	spheres[11].position = glm::vec3(0.52f, 1.5f, -0.12f);
-	spheres[11].radius = 0.35f;
-	spheres[11].material = glass;
 
 	//HMaterial floorMaterial = HMaterial(glm::vec3(0.1f), glm::vec3(0.0f));
 	//floorMaterial.materialType = DIFFUSE;
@@ -330,32 +326,42 @@ void HScene::LoadSceneFile() {
 	// Temp meshloading
 	HTriangleMesh mesh;
 	fileLoader.LoadOBJ("bunny.obj", mesh);
+	mesh.position = glm::vec3(0.2f, -0.266f, 0.0f);
+	for (HTriangle tri : mesh.triangles) {
+		tri.v0 += mesh.position;
+		tri.v1 += mesh.position;
+		tri.v2 += mesh.position;
+		tri.material = blueSub;
+		triangles.push_back(tri);
+	}
 
-	numTriangles = mesh.triangles.size()+2;
-	triangles = new HTriangle[numTriangles];
+	//numTriangles = mesh.triangles.size()+2;
+	//triangles = new HTriangle[numTriangles];
+	//triangles = mesh.triangles;
 
 
 	HMaterial floorMaterial = HMaterial(glm::vec3(0.2f), glm::vec3(0.0f));
 	floorMaterial.materialType = DIFFUSE;
 	//numTriangles = 2;
 	//triangles = new HTriangle[numTriangles];
-	triangles[0] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-							 glm::vec3(25.0f, -0.1f, -25.0f),
-							 glm::vec3(25.0f, -0.1f, 25.0f),
-							 floorMaterial);
-	triangles[1] = HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-							 glm::vec3(25.0f, -0.1f, 25.0f),
-							 glm::vec3(-25.0f, -0.1f, 25.0f),
-							 floorMaterial);
+	triangles.push_back(HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+								  glm::vec3(25.0f, -0.1f, -25.0f),
+								  glm::vec3(25.0f, -0.1f, 25.0f),
+								  floorMaterial));
+	triangles.push_back(HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
+								  glm::vec3(25.0f, -0.1f, 25.0f),
+								  glm::vec3(-25.0f, -0.1f, 25.0f),
+								  floorMaterial));
 
-	mesh.position = glm::vec3(0.2f, -0.266f, 0.0f);
-	for (int i = 2; i < numTriangles; i++) {
-		triangles[i] = mesh.triangles[i];
-		triangles[i].v0 += mesh.position;
-		triangles[i].v1 += mesh.position;
-		triangles[i].v2 += mesh.position;
-		triangles[i].material = greenSub;
-	}
+	numTriangles = triangles.size();
+
+	//for (int i = 2; i < numTriangles; i++) {
+	//	triangles[i] = mesh.triangles[i];
+	//	triangles[i].v0 += mesh.position;
+	//	triangles[i].v1 += mesh.position;
+	//	triangles[i].v2 += mesh.position;
+	//	triangles[i].material = blueSub;
+	//}
 
 
 }

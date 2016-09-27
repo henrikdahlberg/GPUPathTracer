@@ -1,4 +1,5 @@
 #include <Core/Renderer.h>
+#include <Core/BVHConstruction.h>
 
 HRenderer::HRenderer(HCamera* camera) {
 	passCounter = 0;
@@ -56,7 +57,10 @@ void HRenderer::InitScene(HScene* scene) {
 
 	numTriangles = scene->numTriangles;
 	checkCudaErrors(cudaMalloc(&triangles, numTriangles*sizeof(HTriangle)));
-	checkCudaErrors(cudaMemcpy(triangles, scene->triangles, numTriangles*sizeof(HTriangle), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpy(triangles, scene->triangles.data(), numTriangles*sizeof(HTriangle), cudaMemcpyHostToDevice));
+
+	BuildBVH(bvh, triangles, numTriangles, scene->sceneBounds);
+
 }
 
 void HRenderer::Reset(HCamera* camera) {

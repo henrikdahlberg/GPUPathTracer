@@ -31,7 +31,7 @@ void HCamera::InitDefaults() {
 	cameraData.focalDistance = 1.9f;
 	//cameraData.FOV.x = 39.0f; //Cornell
 	//cameraData.FOV.x = 35.0f; //bunny
-	cameraData.FOV.x = 90.0f;
+	cameraData.FOV.x = 105.0f;
 	velocity = 3.0f;
 	mouseSensitivity = 0.25f;
 }

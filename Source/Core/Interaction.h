@@ -23,8 +23,4 @@ struct HSurfaceInteraction : HInteraction {
 
 };
 
-struct HVolumeInteraction : HInteraction {
-	// TODO: Subsurface scattering, volumetric scattering
-};
-
 #endif // INTERACTION_H

@@ -46,6 +46,7 @@ private:
 	HTriangle* triangles;
 	unsigned int numTriangles;
 
+	BVH bvh;
 };
 
 #endif // RENDERER_H

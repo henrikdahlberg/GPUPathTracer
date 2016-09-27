@@ -39,5 +39,7 @@
 #include <thrust/remove.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/reduce.h>
+#include <thrust/sort.h>
 
 #endif // INCLUDE_H

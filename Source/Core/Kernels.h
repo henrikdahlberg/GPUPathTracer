@@ -3,11 +3,16 @@
 
 #include <Core/Camera.h>
 #include <Core/Scene.h>
+#include <Core/BVH.h>
 
 namespace HKernels {
 
 	// The 'extern "C"' declaration is necessary in order to call
 	// CUDA kernels defined in .cu-files from .cpp files
+
+	/**
+	 * Main renderer call, does ray propagation and scattering
+	 */
 	extern "C" void LaunchRenderKernel(HImage* image,
 									   glm::vec3* accumulatedColor,
 									   glm::vec3* colorMask,

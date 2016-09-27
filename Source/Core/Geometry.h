@@ -55,6 +55,8 @@ struct HBoundingBox {
 
 	__host__ __device__ glm::vec3 Diagonal() const { return pmax - pmin; }
 
+	__host__ __device__ glm::vec3 Centroid() const { return 0.5f*(pmax + pmin); }
+
 	__host__ __device__ float SurfaceArea() const {
 		glm::vec3 d = Diagonal();
 		return 2 * (d.x * d.y + d.y * d.z + d.z * d.x);
@@ -88,7 +90,7 @@ struct HBoundingBox {
 // Geometry inline functions
 //////////////////////////////////////////////////////////////////////////
 
-__host__ __device__ inline HBoundingBox Union(const HBoundingBox &b, const glm::vec3 &p) {
+__host__ __device__ inline HBoundingBox UnionP(const HBoundingBox &b, const glm::vec3 &p) {
 	return HBoundingBox(glm::vec3(fmin(b.pmin.x, p.x),
 								  fmin(b.pmin.y, p.y),
 								  fmin(b.pmin.z, p.z)),
@@ -97,7 +99,7 @@ __host__ __device__ inline HBoundingBox Union(const HBoundingBox &b, const glm::
 								  fmax(b.pmax.z, p.z)));
 }
 
-__host__ __device__ inline HBoundingBox Union(const HBoundingBox &b1, const HBoundingBox &b2) {
+__host__ __device__ inline HBoundingBox UnionB(const HBoundingBox &b1, const HBoundingBox &b2) {
 	return HBoundingBox(glm::vec3(fmin(b1.pmin.x, b2.pmin.x),
 								  fmin(b1.pmin.y, b2.pmin.y),
 								  fmin(b1.pmin.z, b2.pmin.z)),
@@ -146,7 +148,7 @@ __host__ __device__ inline HBoundingBox Expand(const HBoundingBox &b, const floa
 }
 
 __host__ __device__ inline bool HBoundingBox::Intersect(const HRay &ray, float* t0, float* t1) const {
-	// TODO
+	
 	return false;
 }
 

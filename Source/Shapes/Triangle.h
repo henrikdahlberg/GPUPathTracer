@@ -83,7 +83,7 @@ struct HTriangle : HShape
 
 	}
 
-	__host__ __device__ HBoundingBox Bounds() const { return Union(HBoundingBox(v0, v1), v2); }
+	__host__ __device__ HBoundingBox Bounds() const { return UnionP(HBoundingBox(v0, v1), v2); }
 	//const int meshID;
 
 	glm::vec3 v0;
