@@ -1,5 +1,5 @@
 #include <Core/BVH.h>
 
-bool BVH::IsLeaf(BVHNode* node) {
-	return !node->leftChild || !node->rightChild;
+BVHNode* BVH::GetRoot() {
+	return BVHNodes; //return pointer to first element in BVHNodes
 }

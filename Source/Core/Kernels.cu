@@ -9,11 +9,53 @@
 
 #include <Core/Include.h>
 
+// Define this to turn on error checking
+//#define CUDA_ERROR_CHECK
+
+#define CudaSafeCall( err ) __cudaSafeCall( err, __FILE__, __LINE__ )
+#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__ )
+
+inline void __cudaSafeCall(cudaError err, const char *file, const int line) {
+#ifdef CUDA_ERROR_CHECK
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaSafeCall() failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+#endif
+
+	return;
+}
+
+inline void __cudaCheckError(const char *file, const int line) {
+#ifdef CUDA_ERROR_CHECK
+	cudaError err = cudaGetLastError();
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaCheckError() failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+
+	// More careful checking. However, this will affect performance.
+	// Comment away if needed.
+	err = cudaDeviceSynchronize();
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaCheckError() with sync failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+#endif
+
+	return;
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
-#define MAX_RAY_DEPTH 41 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 7 // Should probably be part of the HRenderer
+#define BVH_STACK_SIZE 64
 #define STREAM_COMPACTION	
 
 using namespace HMathUtility;
@@ -113,8 +155,105 @@ namespace HKernels {
 		return fresnel;
 	}
 
-	__device__ void TraverseBVH(HRay& ray, BVHNode* node) {
-		// TODO:
+	__device__ void TraverseBVHKarras(HRay& ray,
+								BVHNode* root,
+								float& t,
+								HSurfaceInteraction& intersection,
+								HTriangle* triangles,
+								int& nearestTriIdx) {
+
+		BVHNode* stack[64];
+		BVHNode** stackPtr = stack;
+		*stackPtr++ = nullptr;
+
+		BVHNode* node = root;
+		do {
+			BVHNode* leftChild = node->leftChild;
+			BVHNode* rightChild = node->rightChild;
+
+			bool intersectsLeft = leftChild->boundingBox.Intersect(ray);
+			bool intersectsRight = rightChild->boundingBox.Intersect(ray);
+
+			bool isLeafLeft = leftChild->IsLeaf();
+			bool isLeafRight = rightChild->IsLeaf();
+
+			if (intersectsLeft && isLeafLeft) {
+				if (triangles[leftChild->triangleIdx].Intersect(ray, t, intersection)) {
+					nearestTriIdx = leftChild->triangleIdx;
+				}
+			}
+			if (intersectsRight && isLeafRight) {
+				if (triangles[rightChild->triangleIdx].Intersect(ray, t, intersection)) {
+					nearestTriIdx = rightChild->triangleIdx;
+				}
+			}
+
+			bool traverseLeft = intersectsLeft && !isLeafLeft;
+			bool traverseRight = intersectsRight && !isLeafRight;
+
+			if (!traverseLeft && !traverseRight) {
+				node = *--stackPtr;
+			}
+			else {
+				node = (traverseLeft) ? leftChild : rightChild;
+				if (traverseLeft && traverseRight) {
+					*stackPtr++ = rightChild;
+				}
+			}
+		} while (node != nullptr);
+
+	}
+
+	__device__ void TraverseBVHStupid(HRay& ray,
+									  BVHNode* root,
+									  float& t,
+									  HSurfaceInteraction& intersection,
+									  HTriangle* triangles,
+									  int numTriangles,
+									  int& nearestTriIdx) {
+
+		if (root->boundingBox.Intersect(ray)) {
+			for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
+				if (triangles[triIdx].Intersect(ray, t, intersection)) {
+					nearestTriIdx = triIdx;
+				}
+			}
+		}
+
+	}
+
+	__device__ void TraverseBVH(HRay& ray,
+									  BVHNode* root,
+									  float& t,
+									  HSurfaceInteraction& intersection,
+									  HTriangle* triangles,
+									  int& nearestTriIdx) {
+
+		BVHNode* stack[BVH_STACK_SIZE];
+		int topIndex = BVH_STACK_SIZE;
+		stack[--topIndex] = root;
+
+		while (topIndex != BVH_STACK_SIZE) {
+
+			BVHNode* node = stack[topIndex++];
+
+			if (node->boundingBox.Intersect(ray)) {
+				if (node->IsLeaf()) {
+					if (triangles[node->triangleIdx].Intersect(ray, t, intersection)) {
+						nearestTriIdx = node->triangleIdx;
+					}
+				}
+				else {
+					stack[--topIndex] = node->rightChild;
+					stack[--topIndex] = node->leftChild;
+
+					if (topIndex < 0) {
+						printf("Increase BVH_STACK_SIZE");
+						break;
+					}
+				}
+			}
+		}
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -191,6 +330,7 @@ namespace HKernels {
 								HRay* rays,
 								HSphere* spheres,
 								int numSpheres,
+								BVHNode* rootNode,
 								HTriangle* triangles,
 								int numTriangles,
 								int currentSeed) {
@@ -216,31 +356,26 @@ namespace HKernels {
 			HSurfaceInteraction intersection;
 			int nearestSphereIdx;
 			int nearestTriIdx;
-			bool nearestIsTri = false;
+			bool nearestIsTri = true;
+
+			TraverseBVH(currentRay, rootNode, t, intersection, triangles, nearestTriIdx);
+
+			//if (t < M_INF) printf("somethingsup\n");
+
+			//// Triangle intersection
+			//for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
+			//	if (triangles[triIdx].Intersect(currentRay, t, intersection)) {
+			//		nearestTriIdx = triIdx;
+			//	}
+			//}
 
 			// Sphere intersection
 			for (int sphereIdx = 0; sphereIdx < numSpheres; sphereIdx++) {
 				if (spheres[sphereIdx].Intersect(currentRay, t, intersection)) {
 					nearestSphereIdx = sphereIdx;
+					nearestIsTri = false;
 				}
 			}
-
-			// Triangle intersection
-			for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
-				if (triangles[triIdx].Intersect(currentRay, t, intersection)) {
-					nearestTriIdx = triIdx;
-					nearestIsTri = true;
-				}
-			}
-
-			// passed from renderer
-			BVH bvh;
-
-			BVHNode* currentNode = bvh.GetRoot();
-
-
-
-
 
 			// Subsurface scattering.
 			HScatteringProperties scattering = currentRay.currentMedium.scatteringProperties;
@@ -414,6 +549,7 @@ namespace HKernels {
 									   HRay* rays,
 									   HSphere* spheres,
 									   unsigned int numSpheres,
+									   BVHNode* rootNode,
 									   HTriangle* triangles,
 									   int numTriangles) {
 		unsigned int blockSize = BLOCK_SIZE;
@@ -431,6 +567,7 @@ namespace HKernels {
 										  livePixels,
 										  colorMask,
 										  accumulatedColor);
+		CudaCheckError();
 
 		// Generate new seed each millisecond from system time and ray depth
 		SYSTEMTIME time;
@@ -443,6 +580,7 @@ namespace HKernels {
 		InitCameraRays<<<gridSize, blockSize>>>(rays,
 												cameraData,
 												currentSeed);
+		CudaCheckError();
 
 		// Trace surviving rays until none left or maximum depth reached
 		unsigned int newGridSize;
@@ -464,9 +602,11 @@ namespace HKernels {
 													rays,
 													spheres,
 													numSpheres,
+													rootNode,
 													triangles,
 													numTriangles,
 													currentSeed);
+			CudaCheckError();
 
 			// Remove terminated rays with stream compaction
 #if defined(_WIN64) && defined(STREAM_COMPACTION)
@@ -491,6 +631,7 @@ namespace HKernels {
 												  accumulatedColor,
 												  cameraData,
 												  passCounter);
+		CudaCheckError();
 
 		checkCudaErrors(cudaFree(livePixels));
 	}

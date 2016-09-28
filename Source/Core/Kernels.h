@@ -21,6 +21,7 @@ namespace HKernels {
 									   HRay* rays,
 									   HSphere* spheres,
 									   unsigned int numSpheres,
+									   BVHNode* rootNode,
 									   HTriangle* triangles,
 									   unsigned int numTriangles);
 

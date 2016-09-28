@@ -36,6 +36,7 @@ HImage* HRenderer::Render() {
 								 rays,
 								 spheres,
 								 numSpheres,
+								 bvh.BVHNodes,
 								 triangles,
 								 numTriangles);
 

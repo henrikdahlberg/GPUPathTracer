@@ -7,10 +7,12 @@
 typedef unsigned long long MortonCode;
 
 struct BVHNode {
+
+	__host__ __device__ inline bool IsLeaf() { return !leftChild && !rightChild; }
+
 	int minId;
 	int maxId; // do we even use these?
 	int triangleIdx;
-	int splitDim;
 
 	BVHNode* leftChild;
 	BVHNode* rightChild;
@@ -25,7 +27,6 @@ public:
 	BVH() {}
 	virtual ~BVH() {}
 
-	bool IsLeaf(BVHNode* node);
 	BVHNode* GetRoot();
 
 	BVHNode* BVHNodes;

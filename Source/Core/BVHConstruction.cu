@@ -2,6 +2,47 @@
 #include <Core/BVH.h>
 #include <Shapes/Triangle.h>
 
+// Define this to turn on error checking
+//#define CUDA_ERROR_CHECK
+
+#define CudaSafeCall( err ) __cudaSafeCall( err, __FILE__, __LINE__ )
+#define CudaCheckError()    __cudaCheckError( __FILE__, __LINE__ )
+
+inline void __cudaSafeCall(cudaError err, const char *file, const int line) {
+#ifdef CUDA_ERROR_CHECK
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaSafeCall() failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+#endif
+
+	return;
+}
+
+inline void __cudaCheckError(const char *file, const int line) {
+#ifdef CUDA_ERROR_CHECK
+	cudaError err = cudaGetLastError();
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaCheckError() failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+
+	// More careful checking. However, this will affect performance.
+	// Comment away if needed.
+	err = cudaDeviceSynchronize();
+	if (cudaSuccess != err) {
+		fprintf(stderr, "cudaCheckError() with sync failed at %s:%i : %s\n",
+				file, line, cudaGetErrorString(err));
+		exit(-1);
+	}
+#endif
+
+	return;
+}
+
+
 #define BLOCK_SIZE 128;
 
 //////////////////////////////////////////////////////////////////////////
@@ -74,11 +115,12 @@ __global__ void ConstructBVH(BVHNode* BVHNodes, BVHNode* BVHLeaves,
 
 		// Handle leaf first
 		leaf->triangleIdx = triangleIdx;
+		//printf("%d, %d\n", leaf->triangleIdx, (BVHLeaves + i)->triangleIdx);
 		leaf->boundingBox = triangle.Bounds();
 
 		BVHNode* current = leaf->parent;
 		int currentIndex = current - BVHNodes;
-
+		
 		int res = atomicAdd(nodeCounter + currentIndex, 1);
 
 		// Go up and handle internal nodes
@@ -86,15 +128,9 @@ __global__ void ConstructBVH(BVHNode* BVHNodes, BVHNode* BVHLeaves,
 			if (res == 0) {
 				return;
 			}
-
 			HBoundingBox leftBoundingBox = current->leftChild->boundingBox;
-			HBoundingBox rightBoundingBox = current->leftChild->boundingBox;
+			HBoundingBox rightBoundingBox = current->rightChild->boundingBox;
 
-			glm::vec3 d = leftBoundingBox.Centroid() - rightBoundingBox.Centroid();
-
-			// Find dimension with largest distance between children BBoxes
-			current->splitDim = (fabs(d.x) > fabs(d.y) && fabs(d.x) > fabs(d.z)) ? 0 :
-															  ((fabs(d.y) > fabs(d.z)) ? 1 : 2);
 			// Compute current bounding box
 			current->boundingBox = UnionB(leftBoundingBox,
 										  rightBoundingBox);
@@ -232,6 +268,99 @@ __global__ void ComputeMortonCodes(HTriangle* triangles,
 	}
 }
 
+__global__ void DebugBVH(BVHNode* BVHLeaves, BVHNode* BVHNodes, int numTriangles) {
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+	//if (i < numTriangles) {
+	//	//printf("%d\n", (BVHLeaves + i)->triangleIdx);
+	//	bool broken = false;
+	//	BVHNode* current = BVHLeaves + i;
+	//	BVHNode* last;
+	//	while (true) {
+	//		last = current;
+	//		current = current->parent;
+
+	//		if (last == rootNode && current == nullptr) {
+	//			break;
+	//		}
+
+	//		broken = (current->leftChild != last && current->rightChild != last);
+	//		if (broken) {
+	//			printf("BVH broken");
+	//		}
+
+	//	}
+
+	//}
+
+	// do in serial
+	if (i == 0) {
+		for (int j = 0; j < numTriangles; j++) {
+			BVHNode* currentNode = BVHLeaves + j;
+			printf("BBox for triangleIdx %d: pmin: (%f,%f,%f), pmax: (%f,%f,%f)\n",
+				   (BVHLeaves + j)->triangleIdx,
+				   currentNode->boundingBox.pmin.x,
+				   currentNode->boundingBox.pmin.y,
+				   currentNode->boundingBox.pmin.z,
+				   currentNode->boundingBox.pmax.x,
+				   currentNode->boundingBox.pmax.y,
+				   currentNode->boundingBox.pmax.z);
+		}
+		//parents:
+		for (int j = 0; j < numTriangles; j++) {
+			BVHNode* currentNode = (BVHLeaves + j)->parent;
+			printf("BBox for parent node of triangleIdx %d: pmin: (%f,%f,%f), pmax: (%f,%f,%f)\n",
+				   (BVHLeaves + j)->triangleIdx,
+				   currentNode->boundingBox.pmin.x,
+				   currentNode->boundingBox.pmin.y,
+				   currentNode->boundingBox.pmin.z,
+				   currentNode->boundingBox.pmax.x,
+				   currentNode->boundingBox.pmax.y,
+				   currentNode->boundingBox.pmax.z);
+		}
+
+		for (int j = 0; j < numTriangles; j++) {
+			BVHNode* currentNode = (BVHLeaves + j)->parent->parent;
+			printf("BBox for parents parent node of triangleIdx %d: pmin: (%f,%f,%f), pmax: (%f,%f,%f)\n",
+				   (BVHLeaves + j)->triangleIdx,
+				   currentNode->boundingBox.pmin.x,
+				   currentNode->boundingBox.pmin.y,
+				   currentNode->boundingBox.pmin.z,
+				   currentNode->boundingBox.pmax.x,
+				   currentNode->boundingBox.pmax.y,
+				   currentNode->boundingBox.pmax.z);
+		}
+
+		for (int j = 0; j < numTriangles; j++) {
+			BVHNode* currentNode = (BVHLeaves + j)->parent->parent->parent;
+			printf("BBox for parents parents parent node of triangleIdx %d: pmin: (%f,%f,%f), pmax: (%f,%f,%f)\n",
+				   (BVHLeaves + j)->triangleIdx,
+				   currentNode->boundingBox.pmin.x,
+				   currentNode->boundingBox.pmin.y,
+				   currentNode->boundingBox.pmin.z,
+				   currentNode->boundingBox.pmax.x,
+				   currentNode->boundingBox.pmax.y,
+				   currentNode->boundingBox.pmax.z);
+		}
+
+	}
+
+	//if (i == 0) {
+	//	for (int j = 0; j < numTriangles; j++) {
+	//		BVHNode* currentNode = BVHLeaves + j;
+
+	//		while (currentNode->parent != nullptr) {
+	//			if (currentNode->parent->leftChild != currentNode && currentNode->parent->rightChild != currentNode) {
+	//				printf("\n SOMETHING IS WRONG\n");
+	//			}
+	//			currentNode = currentNode->parent;
+	//		}
+
+	//	}
+	//}
+}
+
 struct BoundingBoxUnion {
 	__host__ __device__ HBoundingBox operator()(const HBoundingBox &b1, const HBoundingBox &b2) const {
 		return UnionB(b1, b2);
@@ -263,6 +392,7 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	cudaEventRecord(start, 0);
 	thrust::device_vector<HBoundingBox> boundingBoxes(numTriangles);
 	ComputeBoundingBoxes << <gridSize, blockSize >> >(triangles, numTriangles, boundingBoxes.data().get());
+	CudaCheckError();
 	checkCudaErrors(cudaGetLastError());
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
@@ -282,6 +412,10 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	std::cout << "Total pre-computation time for scene was " << total << " ms.\n" << std::endl;
 	total = 0;
 
+	std::cout << "Scene boundingbox:\n";
+	std::cout << "pmin: " << sceneBounds.pmin.x << ", " << sceneBounds.pmin.y << ", " << sceneBounds.pmin.z << std::endl;
+	std::cout << "pmax: " << sceneBounds.pmax.x << ", " << sceneBounds.pmax.y << ", " << sceneBounds.pmax.z << std::endl;
+
 	// Pre-process done, start building BVH
 
 	// Compute Morton codes
@@ -292,6 +426,7 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 													numTriangles,
 													sceneBounds,
 													mortonCodes.data().get());
+	CudaCheckError();
 	checkCudaErrors(cudaGetLastError());
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
@@ -304,7 +439,12 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	thrust::sequence(triangleIDs.begin(), triangleIDs.end());
 	std::cout << "Sort triangles...";
 	cudaEventRecord(start, 0);
-	thrust::sort_by_key(mortonCodes.begin(), mortonCodes.end(), triangleIDs.begin());
+	try {
+		thrust::sort_by_key(mortonCodes.begin(), mortonCodes.end(), triangleIDs.begin());
+	}
+	catch (thrust::system_error e) {
+		std::cout << "Error inside sort: " << e.what() << std::endl;
+	}
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
 	cudaEventElapsedTime(&elapsed, start, stop);
@@ -312,15 +452,20 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	total += elapsed;
 
 	// Build radix tree of BVH nodes
-	thrust::device_vector<BVHNode> BVHNodes(numTriangles - 1);
-	thrust::device_vector<BVHNode> BVHLeaves(numTriangles);
+	checkCudaErrors(cudaMalloc((void**)&bvh.BVHNodes, (numTriangles - 1)*sizeof(BVHNode)));
+	checkCudaErrors(cudaMalloc((void**)&bvh.BVHLeaves, numTriangles*sizeof(BVHNode)));
+	//thrust::device_vector<BVHNode> BVHNodes(numTriangles - 1);
+	//thrust::device_vector<BVHNode> BVHLeaves(numTriangles);
 	std::cout << "Building radix tree...";
 	cudaEventRecord(start, 0);
-	BuildRadixTree << <gridSize, blockSize >> >(BVHNodes.data().get(),
-												BVHLeaves.data().get(),
+	BuildRadixTree << <gridSize, blockSize >> >(//BVHNodes.data().get(),
+												//BVHLeaves.data().get(),
+												bvh.BVHNodes,
+												bvh.BVHLeaves,
 												mortonCodes.data().get(),
 												triangleIDs.data().get(),
 												numTriangles);
+	CudaCheckError();
 	checkCudaErrors(cudaGetLastError());
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
@@ -332,12 +477,17 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	thrust::device_vector<int> nodeCounters(numTriangles);
 	std::cout << "Building BVH...";
 	cudaEventRecord(start, 0);
-	ConstructBVH << <gridSize, blockSize >> >(BVHNodes.data().get(),
-											  BVHLeaves.data().get(),
+	ConstructBVH << <gridSize, blockSize >> >(//BVHNodes.data().get(),
+											  //BVHLeaves.data().get(),
+											  bvh.BVHNodes,
+											  bvh.BVHLeaves,
 											  nodeCounters.data().get(),
 											  triangles,
 											  triangleIDs.data().get(),
 											  numTriangles);
+	CudaCheckError();
+	//checkCudaErrors(cudaDeviceSynchronize());
+	//DebugBVH << <gridSize, blockSize >> >(bvh.BVHLeaves, bvh.BVHNodes, numTriangles);
 	checkCudaErrors(cudaGetLastError());
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
@@ -345,10 +495,17 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	std::cout << " done! Took " << elapsed << " ms." << std::endl;
 	total += elapsed;
 
-	bvh.BVHNodes = BVHNodes.data().get();
-	bvh.BVHLeaves = BVHLeaves.data().get();
+	//checkCudaErrors(cudaMalloc((void**)&bvh.BVHNodes, (numTriangles - 1)*sizeof(BVHNode)));
+	//checkCudaErrors(cudaMalloc((void**)&bvh.BVHLeaves, numTriangles*sizeof(BVHNode)));
+	//checkCudaErrors(cudaMemcpy(bvh.BVHNodes, BVHNodes.data().get(), (numTriangles - 1)*sizeof(BVHNode), cudaMemcpyDeviceToDevice));
+	//checkCudaErrors(cudaMemcpy(bvh.BVHLeaves, BVHLeaves.data().get(), numTriangles*sizeof(BVHNode), cudaMemcpyDeviceToDevice));
+	//bvh.BVHNodes = BVHNodes.data().get();
+	//bvh.BVHLeaves = BVHLeaves.data().get();
 
 	std::cout << "Total BVH construction time was " << total << " ms.\n" << std::endl;
+
+
+	
 
 	cudaEventDestroy(start);
 	cudaEventDestroy(stop);

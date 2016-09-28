@@ -12,6 +12,9 @@ struct HRay {
 	__host__ __device__ HRay()
 		: mint(0.0f), maxt(M_INF) {}
 	__host__ __device__ HRay(const glm::vec3 &o,
+							 const glm::vec3 &d)
+							 : origin(o), direction(d), directionInv(glm::vec3(1.0f / d.x, 1.0f / d.y, 1.0f / d.z)) {}
+	__host__ __device__ HRay(const glm::vec3 &o,
 							 const glm::vec3 &d,
 							 float start,
 							 float end = M_INF)
@@ -21,6 +24,8 @@ struct HRay {
 
 	glm::vec3 origin;
 	glm::vec3 direction;
+	glm::vec3 directionInv;
+
 	float mint;
 	float maxt;
 	HMedium enteredMedium;
@@ -80,7 +85,7 @@ struct HBoundingBox {
 		return o;
 	}
 
-	__host__ __device__ bool Intersect(const HRay &ray, float* t0, float* t1) const;
+	__host__ __device__ bool Intersect(/*const*/ HRay &ray) const;
 
 	glm::vec3 pmin;
 	glm::vec3 pmax;
@@ -147,9 +152,24 @@ __host__ __device__ inline HBoundingBox Expand(const HBoundingBox &b, const floa
 						b.pmax + glm::vec3(delta));
 }
 
-__host__ __device__ inline bool HBoundingBox::Intersect(const HRay &ray, float* t0, float* t1) const {
-	
-	return false;
+__host__ __device__ inline bool HBoundingBox::Intersect(/*const*/ HRay &ray) const {
+	//todo precompute this:
+	ray.directionInv = glm::vec3(1.0f / ray.direction.x, 1.0f / ray.direction.y, 1.0f / ray.direction.z);
+	//
+
+	const glm::vec3& inv = ray.directionInv;
+	float t1 = (pmin.x - ray.origin.x) * inv.x;
+	float t2 = (pmax.x - ray.origin.x) * inv.x;
+	float t3 = (pmin.y - ray.origin.y) * inv.y;
+	float t4 = (pmax.y - ray.origin.y) * inv.y;
+	float t5 = (pmin.z - ray.origin.z) * inv.z;
+	float t6 = (pmax.z - ray.origin.z) * inv.z;
+	float tmin = fmax(fmax(fmin(t1, t2), fmin(t3, t4)), fmin(t5, t6));
+	float tmax = fmin(fmin(fmax(t1, t2), fmax(t3, t4)), fmax(t5, t6));
+	if (tmax <= 0.0f) return false; // box is behind
+	if (tmin > tmax) return false; // ray missed
+
+	return true;
 }
 
 #endif // GEOMETRY_H

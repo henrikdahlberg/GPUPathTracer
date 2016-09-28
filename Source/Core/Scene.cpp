@@ -65,6 +65,9 @@ void HScene::LoadSceneFile() {
 	marble.medium.scatteringProperties = HScatteringProperties(64.0f, glm::vec3(0.0f));
 	marble.materialType = ALL_TRANS;
 
+
+	triangles.clear();
+
 	//////////////////////////////////////////////////////////////////////////
 	// Random colored sphere scene
 	//////////////////////////////////////////////////////////////////////////
@@ -103,62 +106,95 @@ void HScene::LoadSceneFile() {
 	//////////////////////////////////////////////////////////////////////////
 	// Fresnel test scene
 	//////////////////////////////////////////////////////////////////////////
-	numSpheres = 11;
+	//numSpheres = 11;
+	numSpheres = 1;
 	spheres = new HSphere[numSpheres];
 
-	//spheres[0].position = glm::vec3(0.4f, 1.0f, -1.0f);
-	//spheres[0].radius = 0.2f;
-	//spheres[0].material = brightLight;
+	spheres[0].position = glm::vec3(0.4f, 10.0f, -1.0f);
+	spheres[0].radius = 1.5f;
+	spheres[0].material = brightLight;
 
-	spheres[0].position = glm::vec3(-0.4f, 0.05f, 0.1f);
-	spheres[0].radius = 0.15f;
-	spheres[0].material = mirror;
+	// 0
+	triangles.push_back(HTriangle(glm::vec3(-3.0f, 1.0f, -1.0f),
+								  glm::vec3(-2.75f, 1.0f, -1.0f),
+								  glm::vec3(-3.0f, 1.25f, -1.25f), red));
+	// 1
+	triangles.push_back(HTriangle(glm::vec3(3.0f, 1.5f, -1.0f),
+								  glm::vec3(2.75f, 1.5f, -1.0f),
+								  glm::vec3(3.0f, 1.25f, -1.25f), red));
+	// 2
+	triangles.push_back(HTriangle(glm::vec3(-3.0f, 1.25f, -1.5f),
+								  glm::vec3(-3.0f, 1.5f, -1.25f),
+								  glm::vec3(-2.75f, 1.25f, -1.5f), red));
+	// 3
+	triangles.push_back(HTriangle(glm::vec3(3.0f, 1.25f, -1.5f),
+								  glm::vec3(2.75f, 1.0f, -1.5f),
+								  glm::vec3(3.0f, 1.0f, -1.25f), red));
+	// 4
+	triangles.push_back(HTriangle(glm::vec3(-1.5f, 1.25f, -1.25f),
+								  glm::vec3(-1.25f, 1.25f, -1.0f),
+								  glm::vec3(-1.5f, 1.0f, -1.25f), red));
+	// 5
+	triangles.push_back(HTriangle(glm::vec3(1.5f, 1.0f, -1.0f),
+								  glm::vec3(1.25f, 1.0f, -1.0f),
+								  glm::vec3(1.5f, 1.25f, -1.25f), red));
+	// 6
+	triangles.push_back(HTriangle(glm::vec3(-1.5f, 1.5f, -1.5f),
+								  glm::vec3(-1.25f, 1.5f, -1.25f),
+								  glm::vec3(-1.5f, 1.25f, -1.25f), red));
+	// 7
+	triangles.push_back(HTriangle(glm::vec3(1.25f, 1.5f, -1.5f),
+								  glm::vec3(1.25f, 1.5f, -1.25f),
+								  glm::vec3(1.5f, 1.25f, -1.5f), red));
+	//spheres[0].position = glm::vec3(-0.4f, 0.05f, 0.1f);
+	//spheres[0].radius = 0.15f;
+	//spheres[0].material = mirror;
 
-	spheres[1].position = glm::vec3(0.9f, 0.03f, 0.2f);
-	spheres[1].radius = 0.13f;
-	spheres[1].material = greenGlass;
+	//spheres[1].position = glm::vec3(0.9f, 0.03f, 0.2f);
+	//spheres[1].radius = 0.13f;
+	//spheres[1].material = greenGlass;
 
-	spheres[2].position = glm::vec3(0.9f, 0.09f, -0.15f);
-	spheres[2].radius = 0.19f;
-	//spheres[2].material = glossyPurple;
-	spheres[2].material = glossyLtBlue;
+	//spheres[2].position = glm::vec3(0.9f, 0.09f, -0.15f);
+	//spheres[2].radius = 0.19f;
+	////spheres[2].material = glossyPurple;
+	//spheres[2].material = glossyLtBlue;
 
-	spheres[3].position = glm::vec3(1.0f, -0.06f, 0.4f);
-	spheres[3].radius = 0.04f;
-	//spheres[3].material = brightLight;
-	spheres[3].material = mirror;
+	//spheres[3].position = glm::vec3(1.0f, -0.06f, 0.4f);
+	//spheres[3].radius = 0.04f;
+	////spheres[3].material = brightLight;
+	//spheres[3].material = mirror;
 
-	spheres[4].position = glm::vec3(1.5f, 0.3f, 0.0f);
-	spheres[4].radius = 0.4f;
-	spheres[4].material = mirror;
+	//spheres[4].position = glm::vec3(1.5f, 0.3f, 0.0f);
+	//spheres[4].radius = 0.4f;
+	//spheres[4].material = mirror;
 
-	spheres[5].position = glm::vec3(0.65f, 0.02f, 0.2f);
-	spheres[5].radius = 0.12f;
-	spheres[5].material = glossyPurple;
+	//spheres[5].position = glm::vec3(0.65f, 0.02f, 0.2f);
+	//spheres[5].radius = 0.12f;
+	//spheres[5].material = glossyPurple;
 
-	spheres[6].position = glm::vec3(0.9f, 0.03f + 0.38f, -0.15f);
-	spheres[6].radius = 0.13f;
-	//spheres[6].material = glossyLtBlue;
-	spheres[6].material = greenSub;
+	//spheres[6].position = glm::vec3(0.9f, 0.03f + 0.38f, -0.15f);
+	//spheres[6].radius = 0.13f;
+	////spheres[6].material = glossyLtBlue;
+	//spheres[6].material = greenSub;
 
-	spheres[7].position = glm::vec3(1.52f, 2.2f/*1.59f*/, -3.12f);
-	spheres[7].radius = 0.6f;
-	spheres[7].material = brightLight;
+	//spheres[7].position = glm::vec3(1.52f, 2.2f/*1.59f*/, -3.12f);
+	//spheres[7].radius = 0.6f;
+	//spheres[7].material = brightLight;
 
-	spheres[8].position = glm::vec3(0.9f, 0.26f, 0.2f);
-	spheres[8].radius = 0.10f;
-	//spheres[8].material = mirror;
-	spheres[8].material = redSub;
+	//spheres[8].position = glm::vec3(0.9f, 0.26f, 0.2f);
+	//spheres[8].radius = 0.10f;
+	////spheres[8].material = mirror;
+	//spheres[8].material = redSub;
 
-	spheres[9].position = glm::vec3(1.5f, 0.1f, 0.7f);
-	spheres[9].radius = 0.2f;
-	//spheres[9].material = glossyGreen;
-	spheres[9].material = orangeSub;
+	//spheres[9].position = glm::vec3(1.5f, 0.1f, 0.7f);
+	//spheres[9].radius = 0.2f;
+	////spheres[9].material = glossyGreen;
+	//spheres[9].material = orangeSub;
 
-	spheres[10].position = glm::vec3(1.5f, 0.46f, 0.7f);
-	spheres[10].radius = 0.16f;
-	//spheres[10].material = glossyRed;
-	spheres[10].material = yellowSub;
+	//spheres[10].position = glm::vec3(1.5f, 0.46f, 0.7f);
+	//spheres[10].radius = 0.16f;
+	////spheres[10].material = glossyRed;
+	//spheres[10].material = yellowSub;
 
 	//HMaterial floorMaterial = HMaterial(glm::vec3(0.1f), glm::vec3(0.0f));
 	//floorMaterial.materialType = DIFFUSE;
@@ -177,9 +213,7 @@ void HScene::LoadSceneFile() {
 	////////////////////////////////////////////////////////////////////////////
 	//// Cornell box
 	////////////////////////////////////////////////////////////////////////////
-	//numTriangles = 40;
 
-	//triangles = new HTriangle[numTriangles];
 	//glm::vec3 A, B, C, D, E, F, G, H, I, J, K, L;
 
 	//// Bottom vertices
@@ -203,46 +237,46 @@ void HScene::LoadSceneFile() {
 	////------------------------------------------------------------------------
 	//// Floor
 	////------------------------------------------------------------------------
-	//triangles[0] = HTriangle(A, B, C, white);
-	//triangles[1] = HTriangle(A, C, D, white);
+	//triangles.push_back(HTriangle(A, B, C, white));
+	//triangles.push_back(HTriangle(A, C, D, white));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
 	//// Roof
 	////------------------------------------------------------------------------
-	//triangles[2] = HTriangle(E, F, I, white);
-	//triangles[3] = HTriangle(F, G, J, white);
-	//triangles[4] = HTriangle(G, H, K, white);
-	//triangles[5] = HTriangle(H, E, L, white);
-	//triangles[6] = HTriangle(F, J, I, white);
-	//triangles[7] = HTriangle(G, K, J, white);
-	//triangles[8] = HTriangle(H, L, K, white);
-	//triangles[9] = HTriangle(E, I, L, white);
+	//triangles.push_back(HTriangle(E, F, I, white));
+	//triangles.push_back(HTriangle(F, G, J, white));
+	//triangles.push_back(HTriangle(G, H, K, white));
+	//triangles.push_back(HTriangle(H, E, L, white));
+	//triangles.push_back(HTriangle(F, J, I, white));
+	//triangles.push_back(HTriangle(G, K, J, white));
+	//triangles.push_back(HTriangle(H, L, K, white));
+	//triangles.push_back(HTriangle(E, I, L, white));
 
 	//// Light
-	//triangles[10] = HTriangle(I, J, K, cornellLight);
-	//triangles[11] = HTriangle(I, K, L, cornellLight);
+	//triangles.push_back(HTriangle(I, J, K, cornellLight));
+	//triangles.push_back(HTriangle(I, K, L, cornellLight));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
 	//// Back wall
 	////------------------------------------------------------------------------
-	//triangles[12] = HTriangle(D, C, G, white);
-	//triangles[13] = HTriangle(D, G, F, white);
+	//triangles.push_back(HTriangle(D, C, G, white));
+	//triangles.push_back(HTriangle(D, G, F, white));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
 	//// Right wall
 	////------------------------------------------------------------------------
-	//triangles[14] = HTriangle(B, H, G, green);
-	//triangles[15] = HTriangle(B, G, C, green);
+	//triangles.push_back(HTriangle(B, H, G, green));
+	//triangles.push_back(HTriangle(B, G, C, green));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
 	//// Left wall
 	////------------------------------------------------------------------------
-	//triangles[16] = HTriangle(A, D, F, red);
-	//triangles[17] = HTriangle(A, F, E, red);
+	//triangles.push_back(HTriangle(A, D, F, red));
+	//triangles.push_back(HTriangle(A, F, E, red));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
@@ -259,18 +293,18 @@ void HScene::LoadSceneFile() {
 	//sG = glm::vec3(-82.0f, 165.0f, -225.0f);
 	//sH = glm::vec3(-130.0f, 165.0f, -65.0f);
 
-	//triangles[18] = HTriangle(sA, sE, sF, white);
-	//triangles[19] = HTriangle(sA, sF, sB, white);
-	//triangles[20] = HTriangle(sB, sF, sG, white);
-	//triangles[21] = HTriangle(sB, sG, sC, white);
-	//triangles[22] = HTriangle(sC, sG, sH, white);
-	//triangles[23] = HTriangle(sC, sH, sD, white);
-	//triangles[24] = HTriangle(sD, sH, sE, white);
-	//triangles[25] = HTriangle(sD, sE, sA, white);
-	//triangles[26] = HTriangle(sA, sE, sF, white);
-	//triangles[27] = HTriangle(sA, sF, sB, white);
-	//triangles[28] = HTriangle(sE, sF, sG, white);
-	//triangles[29] = HTriangle(sE, sG, sH, white);
+	//triangles.push_back(HTriangle(sA, sE, sF, white));
+	//triangles.push_back(HTriangle(sA, sF, sB, white));
+	//triangles.push_back(HTriangle(sB, sF, sG, white));
+	//triangles.push_back(HTriangle(sB, sG, sC, white));
+	//triangles.push_back(HTriangle(sC, sG, sH, white));
+	//triangles.push_back(HTriangle(sC, sH, sD, white));
+	//triangles.push_back(HTriangle(sD, sH, sE, white));
+	//triangles.push_back(HTriangle(sD, sE, sA, white));
+	//triangles.push_back(HTriangle(sA, sE, sF, white));
+	//triangles.push_back(HTriangle(sA, sF, sB, white));
+	//triangles.push_back(HTriangle(sE, sF, sG, white));
+	//triangles.push_back(HTriangle(sE, sG, sH, white));
 	////------------------------------------------------------------------------
 
 	////------------------------------------------------------------------------
@@ -287,28 +321,28 @@ void HScene::LoadSceneFile() {
 	//tG = glm::vec3(-314.0f, 330.0f, -456.0f);
 	//tH = glm::vec3(-265.0f, 330.0f, -296.0f);
 
-	//triangles[30] = HTriangle(tA, tE, tF, white);
-	//triangles[31] = HTriangle(tA, tF, tB, white);
-	//triangles[32] = HTriangle(tB, tF, tG, white);
-	//triangles[33] = HTriangle(tB, tG, tC, white);
-	//triangles[34] = HTriangle(tC, tG, tH, white);
-	//triangles[35] = HTriangle(tC, tH, tD, white);
-	//triangles[36] = HTriangle(tD, tH, tE, white);
-	//triangles[37] = HTriangle(tD, tE, tA, white);
-	//triangles[38] = HTriangle(tE, tF, tG, white);
-	//triangles[39] = HTriangle(tE, tG, tH, white);
+	//triangles.push_back(HTriangle(tA, tE, tF, white));
+	//triangles.push_back(HTriangle(tA, tF, tB, white));
+	//triangles.push_back(HTriangle(tB, tF, tG, white));
+	//triangles.push_back(HTriangle(tB, tG, tC, white));
+	//triangles.push_back(HTriangle(tC, tG, tH, white));
+	//triangles.push_back(HTriangle(tC, tH, tD, white));
+	//triangles.push_back(HTriangle(tD, tH, tE, white));
+	//triangles.push_back(HTriangle(tD, tE, tA, white));
+	//triangles.push_back(HTriangle(tE, tF, tG, white));
+	//triangles.push_back(HTriangle(tE, tG, tH, white));
 	////------------------------------------------------------------------------
 
 	//// Scale measured data down to unit box
 	//float scale = 1.0f / 559.2f;
 	//glm::vec3 offset = glm::vec3(0.5f, 0.0f, 0.5f);
-	//for (int i=0; i < numTriangles; i++) {
-	//	triangles[i].v0 *= scale;
-	//	triangles[i].v1 *= scale;
-	//	triangles[i].v2 *= scale;
-	//	triangles[i].v0 += offset;
-	//	triangles[i].v1 += offset;
-	//	triangles[i].v2 += offset;
+	//for (HTriangle& t : triangles) {
+	//	t.v0 *= scale;
+	//	t.v1 *= scale;
+	//	t.v2 *= scale;
+	//	t.v0 += offset;
+	//	t.v1 += offset;
+	//	t.v2 += offset;
 	//}
 
 	//numSpheres = 2;
@@ -331,37 +365,26 @@ void HScene::LoadSceneFile() {
 		tri.v0 += mesh.position;
 		tri.v1 += mesh.position;
 		tri.v2 += mesh.position;
-		tri.material = blueSub;
+		//tri.material = blueSub;
+		tri.material = red;
 		triangles.push_back(tri);
 	}
 
-	//numTriangles = mesh.triangles.size()+2;
-	//triangles = new HTriangle[numTriangles];
-	//triangles = mesh.triangles;
-
-
 	HMaterial floorMaterial = HMaterial(glm::vec3(0.2f), glm::vec3(0.0f));
 	floorMaterial.materialType = DIFFUSE;
-	//numTriangles = 2;
-	//triangles = new HTriangle[numTriangles];
 	triangles.push_back(HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-								  glm::vec3(25.0f, -0.1f, -25.0f),
-								  glm::vec3(25.0f, -0.1f, 25.0f),
-								  floorMaterial));
+		glm::vec3(25.0f, -0.1f, -25.0f),
+		glm::vec3(25.0f, -0.1f, 25.0f),
+		glossyLtBlue));
 	triangles.push_back(HTriangle(glm::vec3(-25.0f, -0.1f, -25.0f),
-								  glm::vec3(25.0f, -0.1f, 25.0f),
-								  glm::vec3(-25.0f, -0.1f, 25.0f),
-								  floorMaterial));
+		glm::vec3(25.0f, -0.1f, 25.0f),
+		glm::vec3(-25.0f, -0.1f, 25.0f),
+		glossyLtBlue));
+
+
+	
 
 	numTriangles = triangles.size();
-
-	//for (int i = 2; i < numTriangles; i++) {
-	//	triangles[i] = mesh.triangles[i];
-	//	triangles[i].v0 += mesh.position;
-	//	triangles[i].v1 += mesh.position;
-	//	triangles[i].v2 += mesh.position;
-	//	triangles[i].material = blueSub;
-	//}
 
 
 }
