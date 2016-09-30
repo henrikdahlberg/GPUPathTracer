@@ -39,8 +39,14 @@ struct HBoundingBox {
 										 pmax = glm::vec3(-M_INF, -M_INF, -M_INF); }
 	__host__ __device__ HBoundingBox(const glm::vec3 &p)
 		: pmin(p), pmax(p) {}
-	__host__ __device__ HBoundingBox(const glm::vec3 &p1, const glm::vec3 &p2)
-		: pmin(p1), pmax(p2) {}
+	__host__ __device__ HBoundingBox(const glm::vec3 &p1, const glm::vec3 &p2) {
+		pmin = glm::vec3(fmin(p1.x, p2.x),
+						 fmin(p1.y, p2.y),
+						 fmin(p1.z, p2.z));
+		pmax = glm::vec3(fmax(p1.x, p2.x),
+						 fmax(p1.y, p2.y),
+						 fmax(p1.z, p2.z));
+	}
 
 	__host__ __device__ const glm::vec3 &operator[](int i) const { /* TODO: assert i=0, i=1*/ return (i == 0) ? pmin : pmax; }
 

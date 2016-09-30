@@ -42,11 +42,11 @@ void HScene::LoadSceneFile() {
 	mirror.materialType = REFLECTION;
 
 	HMaterial blueSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.1f);
-	blueSub.medium.scatteringProperties = HScatteringProperties(256.0f, glm::vec3(100.0f, 30.0f, 0.02f));
+	blueSub.medium.scatteringProperties = HScatteringProperties(16.0f, glm::vec3(10.0f, 3.0f, 0.02f));
 	blueSub.materialType = ALL_TRANS;
 
 	HMaterial greenSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.4f);
-	greenSub.medium.scatteringProperties = HScatteringProperties(16.0f, glm::vec3(10.0f, 0.2f, 10.0f));
+	greenSub.medium.scatteringProperties = HScatteringProperties(16.0f, glm::vec3(10.0f, 0.2f, 6.0f));
 	greenSub.materialType = ALL_TRANS;
 
 	HMaterial redSub = HMaterial(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), 1.35f);
@@ -114,38 +114,6 @@ void HScene::LoadSceneFile() {
 	spheres[0].radius = 1.5f;
 	spheres[0].material = brightLight;
 
-	// 0
-	triangles.push_back(HTriangle(glm::vec3(-3.0f, 1.0f, -1.0f),
-								  glm::vec3(-2.75f, 1.0f, -1.0f),
-								  glm::vec3(-3.0f, 1.25f, -1.25f), red));
-	// 1
-	triangles.push_back(HTriangle(glm::vec3(3.0f, 1.5f, -1.0f),
-								  glm::vec3(2.75f, 1.5f, -1.0f),
-								  glm::vec3(3.0f, 1.25f, -1.25f), red));
-	// 2
-	triangles.push_back(HTriangle(glm::vec3(-3.0f, 1.25f, -1.5f),
-								  glm::vec3(-3.0f, 1.5f, -1.25f),
-								  glm::vec3(-2.75f, 1.25f, -1.5f), red));
-	// 3
-	triangles.push_back(HTriangle(glm::vec3(3.0f, 1.25f, -1.5f),
-								  glm::vec3(2.75f, 1.0f, -1.5f),
-								  glm::vec3(3.0f, 1.0f, -1.25f), red));
-	// 4
-	triangles.push_back(HTriangle(glm::vec3(-1.5f, 1.25f, -1.25f),
-								  glm::vec3(-1.25f, 1.25f, -1.0f),
-								  glm::vec3(-1.5f, 1.0f, -1.25f), red));
-	// 5
-	triangles.push_back(HTriangle(glm::vec3(1.5f, 1.0f, -1.0f),
-								  glm::vec3(1.25f, 1.0f, -1.0f),
-								  glm::vec3(1.5f, 1.25f, -1.25f), red));
-	// 6
-	triangles.push_back(HTriangle(glm::vec3(-1.5f, 1.5f, -1.5f),
-								  glm::vec3(-1.25f, 1.5f, -1.25f),
-								  glm::vec3(-1.5f, 1.25f, -1.25f), red));
-	// 7
-	triangles.push_back(HTriangle(glm::vec3(1.25f, 1.5f, -1.5f),
-								  glm::vec3(1.25f, 1.5f, -1.25f),
-								  glm::vec3(1.5f, 1.25f, -1.5f), red));
 	//spheres[0].position = glm::vec3(-0.4f, 0.05f, 0.1f);
 	//spheres[0].radius = 0.15f;
 	//spheres[0].material = mirror;
@@ -359,14 +327,18 @@ void HScene::LoadSceneFile() {
 
 	// Temp meshloading
 	HTriangleMesh mesh;
-	fileLoader.LoadOBJ("bunny.obj", mesh);
-	mesh.position = glm::vec3(0.2f, -0.266f, 0.0f);
+	fileLoader.LoadOBJ("dragon.obj", mesh);
+	mesh.position = glm::vec3(0.0f, -0.4f, 0.0f);
+	mesh.scale = 0.25f;
 	for (HTriangle tri : mesh.triangles) {
 		tri.v0 += mesh.position;
+		tri.v0 *= mesh.scale;
 		tri.v1 += mesh.position;
+		tri.v1 *= mesh.scale;
 		tri.v2 += mesh.position;
-		//tri.material = blueSub;
-		tri.material = red;
+		tri.v2 *= mesh.scale;
+		tri.material = greenSub;
+		//tri.material = red;
 		triangles.push_back(tri);
 	}
 

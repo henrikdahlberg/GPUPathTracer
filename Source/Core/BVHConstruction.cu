@@ -49,6 +49,13 @@ inline void __cudaCheckError(const char *file, const int line) {
 // Device functions
 //////////////////////////////////////////////////////////////////////////
 
+__device__ void CheckTreeRecursive(BVHNode* currentNode) {
+	BVHNode* leftChild = currentNode->leftChild;
+	BVHNode* rightChild = currentNode->rightChild;
+
+
+}
+
 /**
 * Longest common prefix for Morton code
 */
@@ -168,10 +175,12 @@ __global__ void BuildRadixTree(BVHNode* radixTreeNodes,
 
 		// Compute upper bound for the length of the range
 		int deltaMin = LongestCommonPrefix(i, i - d, numTriangles, mortonCodes, triangleIDs);
-		int lmax = 128;
+		//int lmax = 128;
+		int lmax = 2;
 
 		while (LongestCommonPrefix(i, i + lmax*d, numTriangles, mortonCodes, triangleIDs) > deltaMin) {
-			lmax = lmax * 4;
+			//lmax = lmax * 4;
+			lmax = lmax * 2;
 		}
 
 		// Find the other end using binary search
@@ -348,13 +357,23 @@ __global__ void DebugBVH(BVHNode* BVHLeaves, BVHNode* BVHNodes, int numTriangles
 
 	//if (i == 0) {
 	//	for (int j = 0; j < numTriangles; j++) {
-	//		BVHNode* currentNode = BVHLeaves + j;
+	//		//BVHNode* currentNode = BVHLeaves + j;
+	//		BVHNode* currentNode = (BVHLeaves + j)->parent;
 
-	//		while (currentNode->parent != nullptr) {
-	//			if (currentNode->parent->leftChild != currentNode && currentNode->parent->rightChild != currentNode) {
+	//		int p = 1;
+	//		//while (currentNode->parent != nullptr) {
+	//		while (currentNode != nullptr) {
+	//			/*if (currentNode->parent->leftChild != currentNode && currentNode->parent->rightChild != currentNode) {
 	//				printf("\n SOMETHING IS WRONG\n");
+	//				}*/
+	//			if (currentNode->leftChild == nullptr) {
+	//				printf("\n Parent %d from triangle %d is missing left child\n", p, j);
+	//			}
+	//			if (currentNode->rightChild == nullptr) {
+	//				printf("\n Parent %d from triangle %d is missing right child\n", p, j);
 	//			}
 	//			currentNode = currentNode->parent;
+	//			++p;
 	//		}
 
 	//	}
@@ -454,13 +473,9 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	// Build radix tree of BVH nodes
 	checkCudaErrors(cudaMalloc((void**)&bvh.BVHNodes, (numTriangles - 1)*sizeof(BVHNode)));
 	checkCudaErrors(cudaMalloc((void**)&bvh.BVHLeaves, numTriangles*sizeof(BVHNode)));
-	//thrust::device_vector<BVHNode> BVHNodes(numTriangles - 1);
-	//thrust::device_vector<BVHNode> BVHLeaves(numTriangles);
 	std::cout << "Building radix tree...";
 	cudaEventRecord(start, 0);
-	BuildRadixTree << <gridSize, blockSize >> >(//BVHNodes.data().get(),
-												//BVHLeaves.data().get(),
-												bvh.BVHNodes,
+	BuildRadixTree << <gridSize, blockSize >> >(bvh.BVHNodes,
 												bvh.BVHLeaves,
 												mortonCodes.data().get(),
 												triangleIDs.data().get(),
@@ -477,9 +492,7 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	thrust::device_vector<int> nodeCounters(numTriangles);
 	std::cout << "Building BVH...";
 	cudaEventRecord(start, 0);
-	ConstructBVH << <gridSize, blockSize >> >(//BVHNodes.data().get(),
-											  //BVHLeaves.data().get(),
-											  bvh.BVHNodes,
+	ConstructBVH << <gridSize, blockSize >> >(bvh.BVHNodes,
 											  bvh.BVHLeaves,
 											  nodeCounters.data().get(),
 											  triangles,
@@ -495,18 +508,8 @@ extern "C" void BuildBVH(BVH& bvh, HTriangle* triangles, int numTriangles, HBoun
 	std::cout << " done! Took " << elapsed << " ms." << std::endl;
 	total += elapsed;
 
-	//checkCudaErrors(cudaMalloc((void**)&bvh.BVHNodes, (numTriangles - 1)*sizeof(BVHNode)));
-	//checkCudaErrors(cudaMalloc((void**)&bvh.BVHLeaves, numTriangles*sizeof(BVHNode)));
-	//checkCudaErrors(cudaMemcpy(bvh.BVHNodes, BVHNodes.data().get(), (numTriangles - 1)*sizeof(BVHNode), cudaMemcpyDeviceToDevice));
-	//checkCudaErrors(cudaMemcpy(bvh.BVHLeaves, BVHLeaves.data().get(), numTriangles*sizeof(BVHNode), cudaMemcpyDeviceToDevice));
-	//bvh.BVHNodes = BVHNodes.data().get();
-	//bvh.BVHLeaves = BVHLeaves.data().get();
-
 	std::cout << "Total BVH construction time was " << total << " ms.\n" << std::endl;
-
-
 	
-
 	cudaEventDestroy(start);
 	cudaEventDestroy(stop);
 }

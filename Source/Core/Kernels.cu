@@ -54,7 +54,7 @@ inline void __cudaCheckError(const char *file, const int line) {
 // Settings, TODO: Move to proper places
 //////////////////////////////////////////////////////////////////////////
 #define BLOCK_SIZE 128
-#define MAX_RAY_DEPTH 7 // Should probably be part of the HRenderer
+#define MAX_RAY_DEPTH 41 // Should probably be part of the HRenderer
 #define BVH_STACK_SIZE 64
 #define STREAM_COMPACTION	
 
@@ -155,7 +155,7 @@ namespace HKernels {
 		return fresnel;
 	}
 
-	__device__ void TraverseBVHKarras(HRay& ray,
+	__device__ void TraverseBVH(HRay& ray,
 								BVHNode* root,
 								float& t,
 								HSurfaceInteraction& intersection,
@@ -176,6 +176,9 @@ namespace HKernels {
 
 			bool isLeafLeft = leftChild->IsLeaf();
 			bool isLeafRight = rightChild->IsLeaf();
+
+			// TODO: Important! Don't traverse sub-box if we have found a triangle
+			//					intersection that is closer than hit point on box
 
 			if (intersectsLeft && isLeafLeft) {
 				if (triangles[leftChild->triangleIdx].Intersect(ray, t, intersection)) {
@@ -204,56 +207,78 @@ namespace HKernels {
 
 	}
 
-	__device__ void TraverseBVHStupid(HRay& ray,
-									  BVHNode* root,
-									  float& t,
-									  HSurfaceInteraction& intersection,
-									  HTriangle* triangles,
-									  int numTriangles,
-									  int& nearestTriIdx) {
+	__device__ void VisualizeBVH(HRay& ray,
+								 BVHNode* root,
+								 glm::vec3* colorMask,
+								 int pixelIdx) {
 
-		if (root->boundingBox.Intersect(ray)) {
-			for (int triIdx = 0; triIdx < numTriangles; triIdx++) {
-				if (triangles[triIdx].Intersect(ray, t, intersection)) {
-					nearestTriIdx = triIdx;
+		BVHNode* stack[64];
+		BVHNode** stackPtr = stack;
+		*stackPtr++ = nullptr;
+
+		BVHNode* node = root;
+		do {
+			BVHNode* leftChild = node->leftChild;
+			BVHNode* rightChild = node->rightChild;
+
+			bool intersectsLeft = leftChild->boundingBox.Intersect(ray);
+			bool intersectsRight = rightChild->boundingBox.Intersect(ray);
+
+			bool isLeafLeft = leftChild->IsLeaf();
+			bool isLeafRight = rightChild->IsLeaf();
+
+			if (intersectsLeft && isLeafLeft) {
+				colorMask[pixelIdx] *= 0.95f;
+			}
+			if (intersectsRight && isLeafRight) {
+				colorMask[pixelIdx] *= 0.95f;
+			}
+
+			bool traverseLeft = intersectsLeft && !isLeafLeft;
+			bool traverseRight = intersectsRight && !isLeafRight;
+
+			if (!traverseLeft && !traverseRight) {
+				node = *--stackPtr;
+			}
+			else {
+				colorMask[pixelIdx] *= 0.95f;
+				node = (traverseLeft) ? leftChild : rightChild;
+				if (traverseLeft && traverseRight) {
+					*stackPtr++ = rightChild;
 				}
 			}
-		}
+		} while (node != nullptr);
 
 	}
 
-	__device__ void TraverseBVH(HRay& ray,
-									  BVHNode* root,
-									  float& t,
-									  HSurfaceInteraction& intersection,
-									  HTriangle* triangles,
-									  int& nearestTriIdx) {
+	__device__ void TraverseBVHRecursive(HRay& ray,
+										 BVHNode* currentNode,
+										 float& t,
+										 HSurfaceInteraction& intersection,
+										 HTriangle* triangles,
+										 int numTriangles,
+										 int& nearestTriIdx,
+										 glm::vec3* colorMask,
+										 int i) {
 
-		BVHNode* stack[BVH_STACK_SIZE];
-		int topIndex = BVH_STACK_SIZE;
-		stack[--topIndex] = root;
+		if (currentNode->boundingBox.Intersect(ray)) {
+			colorMask[i] *= 0.8f;
+			if (currentNode->IsLeaf()) {
+				if (triangles[currentNode->triangleIdx].Intersect(ray, t, intersection)) {
+					nearestTriIdx = currentNode->triangleIdx;
 
-		while (topIndex != BVH_STACK_SIZE) {
-
-			BVHNode* node = stack[topIndex++];
-
-			if (node->boundingBox.Intersect(ray)) {
-				if (node->IsLeaf()) {
-					if (triangles[node->triangleIdx].Intersect(ray, t, intersection)) {
-						nearestTriIdx = node->triangleIdx;
-					}
-				}
-				else {
-					stack[--topIndex] = node->rightChild;
-					stack[--topIndex] = node->leftChild;
-
-					if (topIndex < 0) {
-						printf("Increase BVH_STACK_SIZE");
-						break;
-					}
 				}
 			}
+			else {
+
+				BVHNode* leftChild = currentNode->leftChild;
+				BVHNode* rightChild = currentNode->rightChild;
+
+				TraverseBVHRecursive(ray, leftChild, t, intersection, triangles, numTriangles, nearestTriIdx, colorMask, i);
+				TraverseBVHRecursive(ray, rightChild, t, intersection, triangles, numTriangles, nearestTriIdx, colorMask, i);
+			}
 		}
+
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -358,7 +383,9 @@ namespace HKernels {
 			int nearestTriIdx;
 			bool nearestIsTri = true;
 
+			//TraverseBVHRecursive(currentRay, rootNode, t, intersection, triangles, numTriangles, nearestTriIdx, colorMask, pixelIdx);
 			TraverseBVH(currentRay, rootNode, t, intersection, triangles, nearestTriIdx);
+			//VisualizeBVH(currentRay, rootNode, colorMask, pixelIdx);
 
 			//if (t < M_INF) printf("somethingsup\n");
 

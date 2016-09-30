@@ -24,6 +24,7 @@ struct HTriangleMesh
 
 	// TODO: 4x4 transform matrix
 	glm::vec3 position;
+	float scale;
 
 	static std::vector<HTriangleMesh> meshes;
 

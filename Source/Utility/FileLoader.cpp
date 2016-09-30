@@ -78,9 +78,9 @@ bool HFileLoader::LoadOBJ(const char* filePath,
 				return false;
 			}
 
-			mesh.triangles.emplace_back(5.0f*tempVertices[vertexIndex[0] - 1],
-										5.0f*tempVertices[vertexIndex[1] - 1],
-										5.0f*tempVertices[vertexIndex[2] - 1]);
+			mesh.triangles.emplace_back(tempVertices[vertexIndex[0] - 1],
+										tempVertices[vertexIndex[1] - 1],
+										tempVertices[vertexIndex[2] - 1]);
 
 		}
 		else {
