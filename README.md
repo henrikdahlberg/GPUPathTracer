@@ -1,5 +1,7 @@
 # GPUPathTracer
 GPU Path Tracer written in C++ with CUDA and OpenGL for the DH2323 course project at KTH.
+![](Images/Renders/ProjectTeaser.png?raw=true)
+
 
 ## Project report
 
